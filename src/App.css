@@ -1143,3 +1143,628 @@ textarea {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================
+   ESTILOS DE HU-07: REGISTRO SANITARIO
+   ========================================== */
+
+/* Menú de Navegación Lateral */
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sidebar-menu h3 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-light);
+  margin-bottom: 0.25rem;
+}
+
+.nav-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background-color: transparent;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: var(--transition);
+}
+
+.nav-btn:hover {
+  background-color: var(--secondary);
+  color: var(--text-main);
+}
+
+.nav-btn.active {
+  background-color: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--border-focus);
+}
+
+.nav-icon {
+  font-size: 1.15rem;
+}
+
+/* Stat card específica de salud */
+.stat-card.health {
+  border-left: 4px solid hsl(255, 60%, 45%);
+}
+
+/* Rejilla de Registros Sanitarios */
+.health-records-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.75rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Tarjeta de Registro Sanitario */
+.health-record-card {
+  background-color: var(--surface-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  transition: var(--transition);
+  overflow: hidden;
+}
+
+.health-record-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-focus);
+}
+
+.record-header {
+  padding: 1.25rem 1.5rem;
+  background-color: var(--secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.record-date {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.record-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  flex: 1;
+}
+
+.record-animal-info h4 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.animal-link {
+  color: var(--primary);
+}
+
+.record-arete-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+
+.animal-meta {
+  font-size: 0.75rem;
+  color: var(--text-light);
+  font-weight: 500;
+  margin-top: 0.15rem;
+}
+
+/* Detalles específicos del tratamiento */
+.record-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.85rem;
+  background-color: var(--background);
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.record-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.record-detail-item.full-width {
+  grid-column: span 2;
+}
+
+.record-detail-item .label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.record-detail-item .value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.code-font {
+  font-family: monospace;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+/* Banner de próxima dosis */
+.next-dose-banner {
+  background-color: var(--warning-light);
+  border: 1px solid var(--warning);
+  color: hsl(38, 85%, 28%);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Sección de Notas Aclaratorias */
+.record-notes-section {
+  border-top: 1px dashed var(--border);
+  padding-top: 1rem;
+}
+
+.record-notes-section h5,
+.detail-health-section h3 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.note-item {
+  background-color: var(--background);
+  border-left: 3px solid var(--text-light);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0 6px 6px 0;
+}
+
+.note-text {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  line-height: 1.4;
+}
+
+.note-date {
+  font-size: 0.7rem;
+  color: var(--text-light);
+  display: block;
+  margin-top: 0.25rem;
+  font-weight: 500;
+}
+
+.no-notes-text {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  font-style: italic;
+  margin-bottom: 1rem;
+}
+
+.inline-note-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0;
+  margin-top: 0.5rem;
+}
+
+.inline-note-form textarea {
+  width: 100%;
+  font-size: 0.85rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  font-family: inherit;
+}
+
+.inline-note-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.add-note-trigger {
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 0.5rem;
+}
+
+/* Footer de la tarjeta */
+.health-record-card .record-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+  background-color: var(--background);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.confirmed-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+}
+
+.record-id-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: monospace;
+  color: var(--text-light);
+}
+
+/* Badges de tratamiento */
+.treatment-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.badge-sm {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.badge-vacuna {
+  color: hsl(255, 60%, 45%);
+  background-color: hsl(255, 60%, 94%);
+}
+
+.badge-desparasitacion-int {
+  color: hsl(142, 55%, 25%);
+  background-color: hsl(142, 45%, 93%);
+}
+
+.badge-desparasitacion-ext {
+  color: hsl(180, 60%, 30%);
+  background-color: hsl(180, 50%, 93%);
+}
+
+.badge-vitamina {
+  color: hsl(38, 85%, 30%);
+  background-color: hsl(38, 80%, 93%);
+}
+
+.badge-default {
+  color: var(--text-muted);
+  background-color: var(--secondary);
+}
+
+/* INTEGRACIÓN EN DETALLE DEL ANIMAL */
+.detail-health-section {
+  border-top: 1px solid var(--border);
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+}
+
+.detail-health-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.detail-records-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.detail-record-item {
+  background-color: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.detail-record-row-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detail-record-date {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.detail-record-row-details {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+.next-date-hint {
+  color: hsl(38, 85%, 30%);
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+
+.no-records-placeholder {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  font-style: italic;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.detail-record-notes {
+  border-top: 1px dashed var(--border);
+  padding-top: 0.5rem;
+}
+
+.detail-record-notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.detail-note-bubble {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.note-bubble-text {
+  font-size: 0.8rem;
+  color: var(--text-main);
+}
+
+.note-bubble-date {
+  font-size: 0.65rem;
+  color: var(--text-light);
+  align-self: flex-end;
+}
+
+.detail-note-input-row {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.detail-note-input-row input {
+  flex: 1;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.btn-link-note {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+  padding: 0.25rem 0;
+  text-decoration: underline;
+}
+
+.btn-link-note:hover {
+  color: var(--primary-hover);
+}
+
+/*------------------------------------------------------------------------------*/
+
+/* Scrollbar estético para el modal */
+.modal-card::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-card::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-card::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 20px;
+}
+
+.modal-card::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-light);
+}
+
+/* Contenedor especial para el campo de Revacunación */
+.highlight-field-box {
+  grid-column: span 2;
+  background-color: var(--background);
+  padding: 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border);
+  margin-top: 0.5rem;
+}
+
+.highlight-field-box label {
+  color: var(--primary);
+  /* Resalta un poco el título */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Contenedor principal de la sección */
+.revaccination-container {
+  grid-column: span 2;
+  background-color: var(--primary-light);
+  /* Fondo muy suave verde/claro */
+  padding: 1.25rem;
+  border-radius: var(--radius-lg);
+  /* Bordes bien redondeados */
+  border: 1.5px dashed var(--border);
+  margin-top: 0.5rem;
+  transition: var(--transition);
+}
+
+.revaccination-container.invalid {
+  border-color: var(--danger);
+  background-color: var(--danger-light);
+}
+
+/* Label con icono */
+.revaccination-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.optional-tag {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+/* Layout del contenido */
+.revaccination-content {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+/* Wrapper para el input con el texto "Días" dentro */
+.input-suffix-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 180px;
+  /* Limitamos el ancho para que no se vea gigante */
+}
+
+.revaccination-input {
+  width: 100%;
+  padding: 0.75rem 3.5rem 0.75rem 1rem !important;
+  /* Espacio extra a la derecha para el sufijo */
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--border) !important;
+  background-color: var(--surface) !important;
+  font-weight: 600;
+  text-align: center;
+}
+
+.revaccination-input:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 4px var(--primary-light) !important;
+}
+
+/* El texto "Días" dentro del input */
+.input-suffix-wrapper .suffix {
+  position: absolute;
+  right: 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-light);
+  pointer-events: none;
+  text-transform: uppercase;
+}
+
+/* Texto de ayuda al lado */
+.revaccination-hint {
+  flex: 2;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .revaccination-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .input-suffix-wrapper {
+    max-width: 100%;
+  }
+}
+
+/* Ajuste para móviles */
+@media (max-width: 768px) {
+  .health-records-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .record-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .record-detail-item.full-width {
+    grid-column: span 1;
+  }
+
+  .highlight-field-box {
+    grid-column: span 1;
+  }
+}
