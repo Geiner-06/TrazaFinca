@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from 'react';
 
-export default function HealthRecordFormModal({ isOpen, onClose, onSave, animals, preselectedAnimalId }) {
+export default function HealthRecordFormModal({ isOpen, onClose, onSave, animals, preselectedAnimalId, preselectedTipo, preselectedProducto }) {
     const [form, setForm] = useState({
         animalId: '',
         tipoTratamiento: '',
@@ -21,9 +21,9 @@ export default function HealthRecordFormModal({ isOpen, onClose, onSave, animals
         if (isOpen) {
             setForm({
                 animalId: preselectedAnimalId || '',
-                tipoTratamiento: '',
+                tipoTratamiento: preselectedTipo || '',
                 fechaAplicacion: new Date().toISOString().split('T')[0],
-                productoComercial: '',
+                productoComercial: preselectedProducto || '',
                 lote: '',
                 dosis: '',
                 viaAdministracion: '',
@@ -33,7 +33,7 @@ export default function HealthRecordFormModal({ isOpen, onClose, onSave, animals
             setErrors({});
             setSubmitted(false);
         }
-    }, [isOpen, preselectedAnimalId]);
+    }, [isOpen, preselectedAnimalId, preselectedTipo, preselectedProducto]);
 
     if (!isOpen) return null;
 
