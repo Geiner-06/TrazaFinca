@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function AnimalDetailModal({ animal, onClose }) {
+export default function AnimalDetailModal({ animal, onClose, onEdit }) {
     if (!animal) return null;
 
     const specClass = `species-${animal.especie.replace(/\s+/g, '.')}`;
@@ -17,7 +17,13 @@ export default function AnimalDetailModal({ animal, onClose }) {
             <div className="modal-card detail-card">
                 <div className="modal-header">
                     <h2>Ficha del Animal</h2>
-                    <button className="btn-close" onClick={onClose}>&times;</button>
+                    <div className="detail-header-actions">
+                        {/* Botón de editar (TF-19) */}
+                        <button className="btn btn-outline btn-sm" onClick={() => onEdit(animal)}>
+                            Editar
+                        </button>
+                        <button className="btn-close" onClick={onClose}>&times;</button>
+                    </div>
                 </div>
 
                 <div className="detail-content">

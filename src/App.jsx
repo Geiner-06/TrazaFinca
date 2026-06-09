@@ -7,7 +7,7 @@ import './App.css';
 
 function App() {
   const [animals, setAnimals] = useState(() => {
-    const saved = localStorage.getItem("gestafinca_animals");
+    const saved = localStorage.getItem("trazafinca_animals");
     return saved ? JSON.parse(saved) : SEED_ANIMALS;
   });
 
@@ -18,18 +18,24 @@ function App() {
   useEffect(() => {
     localStorage.setItem("trazafinca_animals", JSON.stringify(animals));
   }, [animals]);
+  const [animalToEdit, setAnimalToEdit] = useState(null);
 
   // TF-16: Generación de ID Único
   const handleSaveAnimal = (newData) => {
-    const numbers = animals.map(a => {
-      const match = a.id.match(/^AN-(\d+)$/);
-      return match ? parseInt(match[1], 10) : 0;
-    });
-    const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
-    const nextId = maxNum + 1;
-    const newId = `AN-${String(nextId).padStart(3, '0')}`;
+    if (animalToEdit) {
+      setAnimals(animals.map(a => a.id === animalToEdit.id ? { ...newData, id: a.id, estado: a.estado } : a));
+      setAnimalToEdit(null);
+    }
+    else {
+      const numbers = animals.map(a => {
+        const match = a.id.match(/^AN-(\d+)$/);
+        return match ? parseInt(match[1], 10) : 0;
+      });
+      const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
+      const newId = `AN-${String(maxNum + 1).padStart(3, '0')}`;
 
-    setAnimals([...animals, { ...newData, id: newId, estado: 'activo' }]);
+      setAnimals([...animals, { ...formData, id: newId, estado: 'activo' }]);
+    }
     setIsModalOpen(false);
   };
 
@@ -50,6 +56,12 @@ function App() {
     total: animals.length,
     activos: animals.filter(a => a.estado === 'activo').length,
     bajas: animals.filter(a => a.estado === 'baja').length
+  };
+
+  const openEditModal = (animal) => {
+    setAnimalToEdit(animal);
+    setSelectedAnimal(null); // Cerramos el detalle
+    setIsModalOpen(true);    // Abrimos el formulario
   };
 
   return (
@@ -97,7 +109,7 @@ function App() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
+          <button className="btn btn-primary" onClick={() => { setAnimalToEdit(null); setIsModalOpen(true) }}>
             Registrar Animal
           </button>
         </header>
@@ -131,14 +143,16 @@ function App() {
       {/* Modal de Registro */}
       <AnimalFormModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => { setIsModalOpen(false); setAnimalToEdit(null); }}
         onSave={handleSaveAnimal}
+        animalToEdit={animalToEdit}
       />
 
       {/* Modal de Detalle (HU-03 / TF-17) */}
       <AnimalDetailModal
         animal={selectedAnimal}
         onClose={() => setSelectedAnimal(null)}
+        onEdit={openEditModal}
       />
     </div>
   );

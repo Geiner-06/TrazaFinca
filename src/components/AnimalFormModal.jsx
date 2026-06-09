@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-export default function AnimalFormModal({ isOpen, onClose, onSave }) {
-    const [form, setForm] = useState({ especie: '', proposito: '', sexo: '', raza: '', arete: '' });
+export default function AnimalFormModal({ isOpen, onClose, onSave, animalToEdit }) {
+    const [form, setForm] = useState({ especie: '', proposito: '', sexo: '', raza: '', arete: '', fecha: '', dueño: '' });
     const [error, setError] = useState(false);
+
+    // Efecto para precargar datos si estamos editando (HU-05)
+    useEffect(() => {
+        if (animalToEdit) {
+            setForm(animalToEdit);
+        } else {
+            setForm({ especie: '', proposito: '', sexo: '', raza: '', arete: '', fecha: '', dueño: '' });
+        }
+    }, [animalToEdit, isOpen]);
 
     if (!isOpen) return null;
 
@@ -13,7 +22,6 @@ export default function AnimalFormModal({ isOpen, onClose, onSave }) {
             return;
         }
         onSave(form);
-        setForm({ especie: '', proposito: '', sexo: '', raza: '', arete: '' });
         setError(false);
     };
 
@@ -21,11 +29,11 @@ export default function AnimalFormModal({ isOpen, onClose, onSave }) {
         <div className="modal-overlay open">
             <div className="modal-card">
                 <div className="modal-header">
-                    <h2>Registrar Animal</h2>
+                    <h2>{animalToEdit ? `Editar Animal: ${animalToEdit.id}` : 'Registrar Nuevo Animal'}</h2>
                     <button className="btn-close" onClick={onClose}>&times;</button>
                 </div>
                 <form onSubmit={handleSubmit}>
-                    {error && <p style={{ color: 'red' }}>* Completa los campos obligatorios</p>}
+                    {error && <div className="form-alert">* Completa los campos obligatorios</div>}
                     <div className="form-grid">
                         <div className="form-group">
                             <label>Especie *</label>
@@ -56,17 +64,25 @@ export default function AnimalFormModal({ isOpen, onClose, onSave }) {
                             </select>
                         </div>
                         <div className="form-group">
-                            <label>Arete (Opcional)</label>
+                            <label>Raza</label>
+                            <input type="text" value={form.raza} onChange={e => setForm({ ...form, raza: e.target.value })} />
+                        </div>
+                        <div className="form-group">
+                            <label>Código Arete (Opcional)</label>
                             <input type="text" value={form.arete} onChange={e => setForm({ ...form, arete: e.target.value })} />
                         </div>
                         <div className="form-group">
-                            <label>Raza</label>
-                            <input type="text" value={form.raza} onChange={e => setForm({ ...form, raza: e.target.value })} />
+                            <label>Fecha Ingreso</label>
+                            <input type="date" value={form.fecha} onChange={e => setForm({ ...form, fecha: e.target.value })} />
+                        </div>
+                        <div className="form-group full-width">
+                            <label>Finca / Dueño</label>
+                            <input type="text" value={form.dueño} onChange={e => setForm({ ...form, dueño: e.target.value })} />
                         </div>
                     </div>
                     <div className="form-actions">
                         <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-                        <button type="submit" className="btn btn-primary">Guardar</button>
+                        <button type="submit" className="btn btn-primary">{animalToEdit ? 'Guardar Cambios' : 'Registrar Animal'}</button>
                     </div>
                 </form>
             </div>
