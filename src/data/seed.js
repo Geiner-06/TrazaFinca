@@ -70,3 +70,42 @@ export const SEED_ANIMALS = [
         estado: "activo"
     }
 ];
+
+export const SEED_HEALTH_RECORDS = [
+    {
+        id: "REC-001",
+        animalId: "AN-001",
+        tipoTratamiento: "vacuna",
+        fechaAplicacion: "2026-05-10",
+        productoComercial: "Antraxvac",
+        lote: "L-9988-A",
+        dosis: "2 ml",
+        viaAdministracion: "Subcutánea",
+        veterinario: "Dr. Rodrigo Arias (Lic. 1124)",
+        periodoRevacunacion: 180,
+        fechaProxima: "2026-11-06",
+        notas: [
+            {
+                id: 1,
+                texto: "Aplicado sin complicaciones. El animal toleró bien el fármaco.",
+                fecha: "2026-05-10"
+            }
+        ],
+        estado: "confirmado"
+    },
+    {
+        id: "REC-002",
+        animalId: "AN-002",
+        tipoTratamiento: "desparasitacion_interna",
+        fechaAplicacion: "2026-06-01",
+        productoComercial: "Panacur Bovinos",
+        lote: "B-7722-X",
+        dosis: "10 ml",
+        viaAdministracion: "Oral",
+        veterinario: "Dr. Rodrigo Arias (Lic. 1124)",
+        periodoRevacunacion: 90,
+        fechaProxima: "2026-08-30",
+        notas: [],
+        estado: "confirmado"
+    }
+];

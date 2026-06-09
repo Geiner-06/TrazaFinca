@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { SEED_ANIMALS } from './data/seed.js';
+import { SEED_ANIMALS, SEED_HEALTH_RECORDS } from './data/seed.js';
 import AnimalCard from './components/AnimalCard.jsx';
 import AnimalFormModal from './components/AnimalFormModal.jsx';
 import AnimalDetailModal from './components/AnimalDatailModal.jsx';
 import BajaModal from './components/BajaModal.jsx';
+import HealthRecordFormModal from './components/HealthRecordFormModal.jsx';
+import HealthRecordCard from './components/HealthRecordCard.jsx';
 import './App.css';
 
 function App() {
@@ -24,6 +26,21 @@ function App() {
   }, [animals]);
   const [animalToEdit, setAnimalToEdit] = useState(null);
 
+  // HU-07: Estado para Registro Sanitario y Navegación
+  const [activeTab, setActiveTab] = useState("animales"); // "animales" | "salud"
+  const [healthRecords, setHealthRecords] = useState(() => {
+    const saved = localStorage.getItem("trazafinca_health_records");
+    return saved ? JSON.parse(saved) : SEED_HEALTH_RECORDS;
+  });
+  const [healthSearch, setHealthSearch] = useState("");
+  const [treatmentFilter, setTreatmentFilter] = useState("todos");
+  const [isHealthModalOpen, setIsHealthModalOpen] = useState(false);
+  const [preselectedAnimalId, setPreselectedAnimalId] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem("trazafinca_health_records", JSON.stringify(healthRecords));
+  }, [healthRecords]);
+
   // TF-16: Generación de ID Único
   const handleSaveAnimal = (newData) => {
     if (animalToEdit) {
@@ -38,7 +55,7 @@ function App() {
       const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
       const newId = `AN-${String(maxNum + 1).padStart(3, '0')}`;
 
-      setAnimals([...animals, { ...formData, id: newId, estado: 'activo' }]);
+      setAnimals([...animals, { ...newData, id: newId, estado: 'activo' }]);
     }
     setIsModalOpen(false);
   };
@@ -56,10 +73,79 @@ function App() {
     return matchesSearch && matchesStatus;
   });
 
+  // HU-07: Guardar Registro Sanitario
+  const handleSaveHealthRecord = (newRecordData) => {
+    const numbers = healthRecords.map(r => {
+      const match = r.id.match(/^REC-(\d+)$/);
+      return match ? parseInt(match[1], 10) : 0;
+    });
+    const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
+    const newId = `REC-${String(maxNum + 1).padStart(3, '0')}`;
+
+    let fechaProxima = null;
+    if (newRecordData.periodoRevacunacion && parseInt(newRecordData.periodoRevacunacion, 10) > 0) {
+      const days = parseInt(newRecordData.periodoRevacunacion, 10);
+      const [year, month, day] = newRecordData.fechaAplicacion.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      date.setDate(date.getDate() + days);
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      fechaProxima = `${y}-${m}-${d}`;
+    }
+
+    const newRecord = {
+      ...newRecordData,
+      id: newId,
+      fechaProxima,
+      notas: [],
+      estado: 'confirmado'
+    };
+
+    setHealthRecords([...healthRecords, newRecord]);
+    setIsHealthModalOpen(false);
+    setPreselectedAnimalId(null);
+  };
+
+  const handleAddClarificationNote = (recordId, noteText) => {
+    const updatedRecords = healthRecords.map(r => {
+      if (r.id === recordId) {
+        const newNote = {
+          id: r.notas.length + 1,
+          texto: noteText,
+          fecha: new Date().toISOString().split('T')[0]
+        };
+        return {
+          ...r,
+          notas: [...r.notas, newNote]
+        };
+      }
+      return r;
+    });
+    setHealthRecords(updatedRecords);
+  };
+
+  // HU-07: Filtrado de registros sanitarios
+  const filteredHealthRecords = healthRecords.filter(r => {
+    const animal = animals.find(a => a.id === r.animalId);
+    const arete = animal ? animal.arete || '' : '';
+    const matchesSearch =
+      r.animalId.toLowerCase().includes(healthSearch.toLowerCase()) ||
+      arete.toLowerCase().includes(healthSearch.toLowerCase()) ||
+      r.productoComercial.toLowerCase().includes(healthSearch.toLowerCase()) ||
+      r.veterinario.toLowerCase().includes(healthSearch.toLowerCase());
+
+    const matchesTreatment =
+      treatmentFilter === 'todos' ? true : r.tipoTratamiento === treatmentFilter;
+
+    return matchesSearch && matchesTreatment;
+  });
+
   const stats = {
     total: animals.length,
     activos: animals.filter(a => a.estado === 'activo').length,
-    bajas: animals.filter(a => a.estado === 'baja').length
+    bajas: animals.filter(a => a.estado === 'baja').length,
+    tratamientos: healthRecords.length
   };
 
   const openEditModal = (animal) => {
@@ -96,7 +182,26 @@ function App() {
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="logo"><span>TrazaFinca</span></div>
-          <p className="subtitle">Gestión de Animales</p>
+          <p className="subtitle">Gestión Pecuaria</p>
+        </div>
+
+        {/* Menú de Navegación lateral */}
+        <div className="sidebar-menu">
+          <h3>Menú</h3>
+          <div className="nav-buttons">
+            <button
+              className={`nav-btn ${activeTab === 'animales' ? 'active' : ''}`}
+              onClick={() => setActiveTab('animales')}
+            >
+              <span className="nav-icon">🐂</span> Animales
+            </button>
+            <button
+              className={`nav-btn ${activeTab === 'salud' ? 'active' : ''}`}
+              onClick={() => setActiveTab('salud')}
+            >
+              <span className="nav-icon">💉</span> Historial Sanitario
+            </button>
+          </div>
         </div>
 
         <div className="stats-section">
@@ -110,62 +215,131 @@ function App() {
               <span className="stat-num">{stats.activos}</span>
               <span className="stat-label">Activos</span>
             </div>
+            <div className="stat-card health">
+              <span className="stat-num">{stats.tratamientos}</span>
+              <span className="stat-label">Tratamientos</span>
+            </div>
           </div>
         </div>
 
-        <div className="filter-group-sidebar">
-          <h3>Filtrar por Estado</h3>
-          <div className="radio-buttons-filter">
-            {['activos', 'bajas', 'todos'].map(f => (
-              <label key={f} className="radio-label">
-                <input type="radio" name="status" checked={statusFilter === f} onChange={() => setStatusFilter(f)} />
-                <span className="custom-radio">{f.toUpperCase()}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-      </aside>
-
-      <main className="main-content">
-        <header className="main-header">
-          <div className="search-wrapper">
-            <input
-              type="text"
-              placeholder="Buscar por ID o especie..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <button className="btn btn-primary" onClick={() => { setAnimalToEdit(null); setIsModalOpen(true) }}>
-            Registrar Animal
-          </button>
-        </header>
-
-        <section className="list-container">
-          <div className="toolbar-title">
-            <h1>Animales {statusFilter}</h1>
-            <span className="badge">{filteredAnimals.length} animales</span>
-          </div>
-
-          {filteredAnimals.length > 0 ? (
-            <div className="animals-grid">
-              {filteredAnimals.map(a => (
-                <AnimalCard
-                  key={a.id}
-                  animal={a}
-                  onClick={() => setSelectedAnimal(a)} // Abrir detalle al hacer clic
-                />
+        {activeTab === 'animales' && (
+          <div className="filter-group-sidebar">
+            <h3>Filtrar por Estado</h3>
+            <div className="radio-buttons-filter">
+              {['activos', 'bajas', 'todos'].map(f => (
+                <label key={f} className="radio-label">
+                  <input type="radio" name="status" checked={statusFilter === f} onChange={() => setStatusFilter(f)} />
+                  <span className="custom-radio">{f.toUpperCase()}</span>
+                </label>
               ))}
             </div>
-          ) : (
-            <div className="empty-state">
-              <h2>No hay animales</h2>
-              <p>No se encontraron registros para esta selección.</p>
-              <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>Registrar Animal</button>
+          </div>
+        )}
+      </aside>
+
+      {activeTab === 'animales' ? (
+        <main className="main-content">
+          <header className="main-header">
+            <div className="search-wrapper">
+              <input
+                type="text"
+                placeholder="Buscar por ID o especie..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
-          )}
-        </section>
-      </main>
+            <button className="btn btn-primary" onClick={() => { setAnimalToEdit(null); setIsModalOpen(true) }}>
+              Registrar Animal
+            </button>
+          </header>
+
+          <section className="list-container">
+            <div className="toolbar-title">
+              <h1>Animales {statusFilter}</h1>
+              <span className="badge">{filteredAnimals.length} animales</span>
+            </div>
+
+            {filteredAnimals.length > 0 ? (
+              <div className="animals-grid">
+                {filteredAnimals.map(a => (
+                  <AnimalCard
+                    key={a.id}
+                    animal={a}
+                    onClick={() => setSelectedAnimal(a)} // Abrir detalle al hacer clic
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <h2>No hay animales</h2>
+                <p>No se encontraron registros para esta selección.</p>
+                <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>Registrar Animal</button>
+              </div>
+            )}
+          </section>
+        </main>
+      ) : (
+        <main className="main-content">
+          <header className="main-header">
+            <div className="search-wrapper">
+              <input
+                type="text"
+                placeholder="Buscar por arete, producto o veterinario..."
+                value={healthSearch}
+                onChange={(e) => setHealthSearch(e.target.value)}
+              />
+            </div>
+            <button className="btn btn-primary" onClick={() => { setPreselectedAnimalId(null); setIsHealthModalOpen(true); }}>
+              Registrar Tratamiento
+            </button>
+          </header>
+
+          <section className="list-container">
+            <div className="filters-toolbar">
+              <div className="toolbar-title">
+                <h1>Registro Sanitario</h1>
+                <span className="badge">{filteredHealthRecords.length} registros</span>
+              </div>
+
+              <div className="toolbar-filters">
+                <div className="select-wrapper">
+                  <select value={treatmentFilter} onChange={(e) => setTreatmentFilter(e.target.value)}>
+                    <option value="todos">Todos los tratamientos</option>
+                    <option value="vacuna">Vacunas</option>
+                    <option value="desparasitacion_interna">Desparasitaciones Internas</option>
+                    <option value="desparasitacion_externa">Desparasitaciones Externas</option>
+                    <option value="vitamina_mineral">Vitaminas / Minerales</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {filteredHealthRecords.length > 0 ? (
+              <div className="health-records-grid">
+                {filteredHealthRecords.map(record => {
+                  const animal = animals.find(a => a.id === record.animalId);
+                  return (
+                    <HealthRecordCard
+                      key={record.id}
+                      record={record}
+                      animal={animal}
+                      onAddNote={(text) => handleAddClarificationNote(record.id, text)}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <h2>No hay registros sanitarios</h2>
+                <p>No se encontraron tratamientos registrados para esta selección.</p>
+                <button className="btn btn-primary" onClick={() => { setPreselectedAnimalId(null); setIsHealthModalOpen(true); }}>
+                  Registrar Tratamiento
+                </button>
+              </div>
+            )}
+          </section>
+        </main>
+      )}
 
       {/* Modal de Registro */}
       <AnimalFormModal
@@ -181,6 +355,12 @@ function App() {
         onClose={() => setSelectedAnimal(null)}
         onEdit={openEditModal}
         onBaja={openBajaModal}
+        healthRecords={healthRecords}
+        onAddHealthRecord={(animalId) => {
+          setPreselectedAnimalId(animalId);
+          setIsHealthModalOpen(true);
+        }}
+        onAddNoteToRecord={handleAddClarificationNote}
       />
 
       {/* Modal de Baja (HU-06) */}
@@ -189,6 +369,15 @@ function App() {
         animalId={animalIdToBaja}
         onClose={() => setIsBajaModalOpen(false)}
         onConfirm={handleConfirmBaja}
+      />
+
+      {/* Modal de Registro de Tratamiento (HU-07) */}
+      <HealthRecordFormModal
+        isOpen={isHealthModalOpen}
+        onClose={() => { setIsHealthModalOpen(false); setPreselectedAnimalId(null); }}
+        onSave={handleSaveHealthRecord}
+        animals={animals}
+        preselectedAnimalId={preselectedAnimalId}
       />
     </div>
   );

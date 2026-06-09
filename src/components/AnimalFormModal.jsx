@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useState, useEffect } from 'react';
 
 export default function AnimalFormModal({ isOpen, onClose, onSave, animalToEdit }) {
     const [form, setForm] = useState({ especie: '', proposito: '', sexo: '', raza: '', arete: '', fecha: '', dueño: '' });

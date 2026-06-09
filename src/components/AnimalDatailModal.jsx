@@ -1,16 +1,55 @@
-import React from 'react';
+import { useState } from 'react';
 
-export default function AnimalDetailModal({ animal, onClose, onEdit, onBaja }) {
+export default function AnimalDetailModal({
+    animal,
+    onClose,
+    onEdit,
+    onBaja,
+    healthRecords = [],
+    onAddHealthRecord,
+    onAddNoteToRecord
+}) {
+    const [activeNoteRecordId, setActiveNoteRecordId] = useState(null);
+    const [newNoteText, setNewNoteText] = useState('');
+
     if (!animal) return null;
 
     const specClass = `species-${animal.especie.replace(/\s+/g, '.')}`;
 
-    // Función para formatear fecha (opcional, basada en tu código original)
     const formatDate = (dateString) => {
         if (!dateString) return "No registrada";
         const parts = dateString.split('-');
         return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateString;
     };
+
+    const getTreatmentBadgeClass = (type) => {
+        switch (type) {
+            case 'vacuna': return 'badge-vacuna';
+            case 'desparasitacion_interna': return 'badge-desparasitacion-int';
+            case 'desparasitacion_externa': return 'badge-desparasitacion-ext';
+            case 'vitamina_mineral': return 'badge-vitamina';
+            default: return 'badge-default';
+        }
+    };
+
+    const getTreatmentLabel = (type) => {
+        switch (type) {
+            case 'vacuna': return 'Vacuna';
+            case 'desparasitacion_interna': return 'Desparasitación Interna';
+            case 'desparasitacion_externa': return 'Desparasitación Externa';
+            case 'vitamina_mineral': return 'Vitamina / Mineral';
+            default: return type;
+        }
+    };
+
+    const submitNote = (recordId) => {
+        if (!newNoteText.trim()) return;
+        onAddNoteToRecord(recordId, newNoteText.trim());
+        setNewNoteText('');
+        setActiveNoteRecordId(null);
+    };
+
+    const animalRecords = healthRecords.filter(r => r.animalId === animal.id);
 
     return (
         <div className="modal-overlay open">
@@ -18,7 +57,6 @@ export default function AnimalDetailModal({ animal, onClose, onEdit, onBaja }) {
                 <div className="modal-header">
                     <h2>Ficha del Animal</h2>
                     <div className="detail-header-actions">
-                        {/* Botón de editar (TF-19) */}
                         <button className="btn btn-outline btn-sm" onClick={() => onEdit(animal)}>
                             Editar
                         </button>
@@ -79,6 +117,88 @@ export default function AnimalDetailModal({ animal, onClose, onEdit, onBaja }) {
                                 </span>
                             </span>
                         </div>
+                    </div>
+
+                    {/* Historial Sanitario (HU-07) */}
+                    <div className="detail-health-section">
+                        <div className="detail-health-header">
+                            <h3>Historial Sanitario</h3>
+                            {animal.estado === 'activo' && (
+                                <button
+                                    className="btn btn-outline btn-sm"
+                                    onClick={() => onAddHealthRecord(animal.id)}
+                                >
+                                    💉 Registrar Tratamiento
+                                </button>
+                            )}
+                        </div>
+
+                        {animalRecords.length > 0 ? (
+                            <div className="detail-records-list">
+                                {animalRecords.map(record => (
+                                    <div key={record.id} className="detail-record-item">
+                                        <div className="detail-record-row-main">
+                                            <span className={`treatment-badge badge-sm ${getTreatmentBadgeClass(record.tipoTratamiento)}`}>
+                                                {getTreatmentLabel(record.tipoTratamiento)}
+                                            </span>
+                                            <span className="detail-record-date">📅 {formatDate(record.fechaAplicacion)}</span>
+                                        </div>
+                                        <div className="detail-record-row-details">
+                                            <p><strong>Producto:</strong> {record.productoComercial} (Lote: {record.lote})</p>
+                                            <p><strong>Dosis / Vía:</strong> {record.dosis} - {record.viaAdministracion}</p>
+                                            <p><strong>Responsable:</strong> {record.veterinario}</p>
+                                            {record.fechaProxima && (
+                                                <p className="next-date-hint">⏳ Próxima Dosis: <strong>{formatDate(record.fechaProxima)}</strong></p>
+                                            )}
+                                        </div>
+
+                                        {/* Notes list and input */}
+                                        <div className="detail-record-notes">
+                                            {record.notas && record.notas.length > 0 && (
+                                                <div className="detail-record-notes-list">
+                                                    {record.notas.map(note => (
+                                                        <div key={note.id} className="detail-note-bubble">
+                                                            <p className="note-bubble-text">{note.texto}</p>
+                                                            <span className="note-bubble-date">({formatDate(note.fecha)})</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {activeNoteRecordId === record.id ? (
+                                                <div className="detail-note-input-row">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Agregar nota aclaratoria..."
+                                                        value={newNoteText}
+                                                        onChange={e => setNewNoteText(e.target.value)}
+                                                        onKeyDown={e => {
+                                                            if (e.key === 'Enter') {
+                                                                submitNote(record.id);
+                                                            }
+                                                        }}
+                                                    />
+                                                    <button className="btn btn-primary btn-sm" onClick={() => submitNote(record.id)}>Agregar</button>
+                                                    <button className="btn btn-secondary btn-sm" onClick={() => setActiveNoteRecordId(null)}>Cancelar</button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    className="btn-link-note"
+                                                    onClick={() => {
+                                                        setActiveNoteRecordId(record.id);
+                                                        setNewNoteText('');
+                                                    }}
+                                                >
+                                                    📝 Agregar Nota Aclaratoria
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="no-records-placeholder">No hay tratamientos sanitarios registrados para este animal.</p>
+                        )}
                     </div>
                 </div>
 

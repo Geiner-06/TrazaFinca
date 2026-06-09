@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function AnimalCard({ animal, onClick }) {
     const specClass = `species-${animal.especie.replace(/\s+/g, '.')}`;
 
