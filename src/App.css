@@ -201,6 +201,8 @@ body {
   flex-direction: column;
   height: 100vh;
   overflow-y: auto;
+  position: relative;
+  z-index: 1;
 }
 
 /* Header superior */
@@ -1766,5 +1768,499 @@ textarea {
 
   .highlight-field-box {
     grid-column: span 1;
+  }
+}
+
+/* ==========================================
+   ESTILOS DE HU-08: DASHBOARD Y ALERTAS
+   ========================================== */
+
+.alert-dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+}
+
+/* Tarjetas de Resumen */
+.alert-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.alert-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+  background-color: var(--surface);
+}
+
+.alert-summary-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.summary-card-icon {
+  font-size: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+}
+
+.summary-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.summary-count {
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.summary-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Colores específicos de tarjetas */
+.card-vencido {
+  border-left: 5px solid var(--danger);
+  background-color: hsl(354, 85%, 98%);
+}
+
+.card-vencido .summary-card-icon {
+  background-color: var(--danger-light);
+}
+
+.card-vencido .summary-count {
+  color: var(--danger);
+}
+
+.card-urgente {
+  border-left: 5px solid hsl(22, 90%, 50%);
+  background-color: hsl(22, 90%, 98%);
+}
+
+.card-urgente .summary-card-icon {
+  background-color: hsl(22, 90%, 94%);
+}
+
+.card-urgente .summary-count {
+  color: hsl(22, 90%, 48%);
+}
+
+.card-proximo {
+  border-left: 5px solid var(--warning);
+  background-color: hsl(45, 90%, 98%);
+}
+
+.card-proximo .summary-card-icon {
+  background-color: hsl(45, 90%, 93%);
+}
+
+.card-proximo .summary-count {
+  color: hsl(40, 85%, 45%);
+}
+
+/* Lista de Alertas */
+.alerts-list-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background-color: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: 2rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Fila de Alerta Individual */
+.alert-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  background-color: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+  gap: 1.5rem;
+}
+
+.alert-list-item:hover {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-sm);
+  background-color: var(--surface);
+}
+
+/* Borde izquierdo dinámico */
+.urgency-vencido {
+  border-left: 5px solid var(--danger);
+}
+
+.urgency-urgente {
+  border-left: 5px solid hsl(22, 90%, 50%);
+}
+
+.urgency-proximo {
+  border-left: 5px solid var(--warning);
+}
+
+/* Pastillas de Urgencia */
+.urgency-pill {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  display: inline-block;
+  text-align: center;
+  min-width: 80px;
+}
+
+.pill-vencido {
+  background-color: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid hsl(354, 70%, 90%);
+}
+
+.pill-urgente {
+  background-color: hsl(22, 90%, 94%);
+  color: hsl(22, 90%, 48%);
+  border: 1px solid hsl(22, 90%, 88%);
+}
+
+.pill-proximo {
+  background-color: hsl(45, 90%, 94%);
+  color: hsl(40, 85%, 45%);
+  border: 1px solid hsl(45, 90%, 88%);
+}
+
+/* Detalles de Animal */
+.alert-main-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.alert-animal-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.animal-tag-icon {
+  font-size: 1rem;
+}
+
+.animal-id-text {
+  font-size: 1.05rem;
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.animal-arete-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.alert-treatment-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.treatment-type-label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.product-name {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* Metadatos Históricos */
+.alert-history-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+  border-left: 1px solid var(--border);
+  padding-left: 1.5rem;
+}
+
+.detail-meta-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  gap: 1rem;
+}
+
+.detail-meta-row .meta-label {
+  color: var(--text-light);
+  font-weight: 500;
+}
+
+.detail-meta-row .meta-value {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.date-highlight {
+  font-weight: 700 !important;
+}
+
+.urgency-vencido .date-highlight {
+  color: var(--danger);
+}
+
+.urgency-urgente .date-highlight {
+  color: hsl(22, 90%, 48%);
+}
+
+.urgency-proximo .date-highlight {
+  color: hsl(40, 85%, 45%);
+}
+
+/* Columna de Acciones */
+.alert-actions-col {
+  display: flex;
+  align-items: center;
+}
+
+.btn-attend-alert {
+  background-color: var(--primary);
+  color: var(--surface);
+  border: none;
+  font-weight: 700;
+  transition: var(--transition);
+}
+
+.btn-attend-alert:hover {
+  background-color: var(--primary-hover);
+  transform: scale(1.05);
+}
+
+/* Estado vacío en Alertas */
+.alerts-empty {
+  padding: 4rem 2rem;
+  max-width: 100%;
+  border: none;
+  background-color: var(--background);
+}
+
+/* MODAL DE ADVERTENCIA PARA ALERTAS */
+.header-warning {
+  background-color: hsl(22, 90%, 96%);
+  border-bottom: 1px solid hsl(22, 90%, 88%);
+}
+
+.header-warning h2 {
+  color: hsl(22, 90%, 45%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.warning-body {
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.warning-text-primary {
+  font-size: 0.95rem;
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+.warning-infobox {
+  background-color: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.warning-infobox p {
+  font-size: 0.9rem;
+  margin: 0;
+  color: var(--text-main);
+}
+
+.warning-text-secondary {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.warning-footer {
+  padding: 1rem 2rem 1.5rem 2rem;
+  border-top: 1px solid var(--border);
+  background-color: var(--background);
+}
+
+/* Colores de Alerta HU-08 */
+:root {
+  --alert-red: #ef4444;
+  /* Vencido */
+  --alert-orange: #f97316;
+  /* Urgente (3 días) */
+  --alert-yellow: #facc15;
+  /* Próximo (7 días) */
+}
+
+/* Dashboard de Alertas */
+.alert-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.alert-stat.vencido {
+  border-bottom: 4px solid var(--alert-red);
+}
+
+.alert-stat.urgente {
+  border-bottom: 4px solid var(--alert-orange);
+}
+
+.alert-stat.proximo {
+  border-bottom: 4px solid var(--alert-yellow);
+}
+
+/* Tarjetas de Alerta */
+.alerts-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.alert-card-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface);
+  padding: 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  border-left-width: 6px;
+  /* Barra de color lateral */
+  transition: var(--transition);
+}
+
+/* Colores Dinámicos (Criterio 2) */
+.status-vencido {
+  border-left-color: var(--alert-red);
+}
+
+.status-urgente {
+  border-left-color: var(--alert-orange);
+}
+
+.status-proximo {
+  border-left-color: var(--alert-yellow);
+}
+
+.alert-card-item:hover {
+  transform: translateX(5px);
+  box-shadow: var(--shadow-md);
+}
+
+.alert-animal-info {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.id-tag {
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.arete-tag {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.treatment-name {
+  margin: 0.25rem 0;
+  font-size: 1rem;
+  color: var(--text-main);
+}
+
+.alert-meta-data {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Cuadro de advertencia dentro del modal */
+.warning-box {
+  background-color: var(--danger-light);
+  border-left: 4px solid var(--danger);
+  padding: 1rem;
+  margin-top: 1rem;
+  border-radius: 4px;
+}
+
+.alerts-list-container {
+  position: relative;
+  padding-top: 10px;
+}
+
+/* Responsivo para Alertas */
+@media (max-width: 900px) {
+  .alert-list-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+
+  .alert-history-details {
+    border-left: none;
+    border-top: 1px dashed var(--border);
+    padding-left: 0;
+    padding-top: 0.75rem;
+  }
+
+  .alert-actions-col {
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+  }
+
+  .btn-attend-alert {
+    width: 100%;
+    padding: 0.85rem;
   }
 }

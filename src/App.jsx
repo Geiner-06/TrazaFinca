@@ -6,6 +6,7 @@ import AnimalDetailModal from './components/AnimalDatailModal.jsx';
 import BajaModal from './components/BajaModal.jsx';
 import HealthRecordFormModal from './components/HealthRecordFormModal.jsx';
 import HealthRecordCard from './components/HealthRecordCard.jsx';
+import AlertDashboard from './components/AlertDashboard.jsx';
 import './App.css';
 
 function App() {
@@ -27,7 +28,7 @@ function App() {
   const [animalToEdit, setAnimalToEdit] = useState(null);
 
   // HU-07: Estado para Registro Sanitario y Navegación
-  const [activeTab, setActiveTab] = useState("animales"); // "animales" | "salud"
+  const [activeTab, setActiveTab] = useState("inicio"); // "inicio" | "animales" | "salud"
   const [healthRecords, setHealthRecords] = useState(() => {
     const saved = localStorage.getItem("trazafinca_health_records");
     return saved ? JSON.parse(saved) : SEED_HEALTH_RECORDS;
@@ -36,6 +37,8 @@ function App() {
   const [treatmentFilter, setTreatmentFilter] = useState("todos");
   const [isHealthModalOpen, setIsHealthModalOpen] = useState(false);
   const [preselectedAnimalId, setPreselectedAnimalId] = useState(null);
+  const [preselectedTipo, setPreselectedTipo] = useState(null);
+  const [preselectedProducto, setPreselectedProducto] = useState(null);
 
   useEffect(() => {
     localStorage.setItem("trazafinca_health_records", JSON.stringify(healthRecords));
@@ -75,6 +78,7 @@ function App() {
 
   // HU-07: Guardar Registro Sanitario
   const handleSaveHealthRecord = (newRecordData) => {
+    // 1. Generar ID para el nuevo registro
     const numbers = healthRecords.map(r => {
       const match = r.id.match(/^REC-(\d+)$/);
       return match ? parseInt(match[1], 10) : 0;
@@ -82,6 +86,7 @@ function App() {
     const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
     const newId = `REC-${String(maxNum + 1).padStart(3, '0')}`;
 
+    // 2. Calcular fecha próxima si aplica
     let fechaProxima = null;
     if (newRecordData.periodoRevacunacion && parseInt(newRecordData.periodoRevacunacion, 10) > 0) {
       const days = parseInt(newRecordData.periodoRevacunacion, 10);
@@ -102,10 +107,48 @@ function App() {
       estado: 'confirmado'
     };
 
-    setHealthRecords([...healthRecords, newRecord]);
+    // Buscamos registros antiguos del mismo animal y tipo que tengan una alerta pendiente
+    const updatedRecords = healthRecords.map(r => {
+      if (
+        r.animalId === newRecordData.animalId &&
+        r.tipoTratamiento === newRecordData.tipoTratamiento &&
+        r.fechaProxima &&
+        !r.alertaAtendida
+      ) {
+        // Marcamos el registro viejo como atendido porque acabamos de crear uno nuevo hoy
+        return { ...r, alertaAtendida: true };
+      }
+      return r;
+    });
+
+    // 3. Guardamos tanto los registros actualizados como el nuevo
+    setHealthRecords([...updatedRecords, newRecord]);
+
+    // 4. Cerrar modal y limpiar estados
     setIsHealthModalOpen(false);
     setPreselectedAnimalId(null);
+    setPreselectedTipo(null);
+    setPreselectedProducto(null);
   };
+
+  // HU-08: Manejadores para Alertas
+  const handleResolveAlert = (recordId) => {
+    setHealthRecords(prevRecords =>
+      prevRecords.map(r =>
+        r.id === recordId ? { ...r, alertaAtendida: true } : r
+      )
+    );
+  };
+
+  const handleQuickRegister = (animalId, tipoTratamiento, producto) => {
+    setPreselectedAnimalId(animalId);
+    setPreselectedTipo(tipoTratamiento);
+    setPreselectedProducto(producto);
+    setIsHealthModalOpen(true);
+  };
+
+  // Alertas activas para el Dashboard
+  const activeAlertsList = healthRecords.filter(r => r.fechaProxima && r.alertaAtendida !== true);
 
   const handleAddClarificationNote = (recordId, noteText) => {
     const updatedRecords = healthRecords.map(r => {
@@ -190,6 +233,12 @@ function App() {
           <h3>Menú</h3>
           <div className="nav-buttons">
             <button
+              className={`nav-btn ${activeTab === 'inicio' ? 'active' : ''}`}
+              onClick={() => setActiveTab('inicio')}
+            >
+              <span className="nav-icon">🏠</span> Inicio
+            </button>
+            <button
               className={`nav-btn ${activeTab === 'animales' ? 'active' : ''}`}
               onClick={() => setActiveTab('animales')}
             >
@@ -237,7 +286,28 @@ function App() {
         )}
       </aside>
 
-      {activeTab === 'animales' ? (
+      {activeTab === 'inicio' ? (
+        <main className="main-content">
+          <header className="main-header">
+            <div className="search-wrapper" style={{ visibility: 'hidden' }}>
+              <input type="text" disabled />
+            </div>
+            <button className="btn btn-primary" onClick={() => { setPreselectedAnimalId(null); setPreselectedTipo(null); setPreselectedProducto(null); setIsHealthModalOpen(true); }}>
+              Registrar Tratamiento
+            </button>
+          </header>
+
+          <section className="list-container">
+            <AlertDashboard
+              alerts={activeAlertsList}
+              animals={animals}
+              healthRecords={healthRecords}
+              onResolveAlert={handleResolveAlert}
+              onQuickRegister={handleQuickRegister}
+            />
+          </section>
+        </main>
+      ) : activeTab === 'animales' ? (
         <main className="main-content">
           <header className="main-header">
             <div className="search-wrapper">
@@ -289,7 +359,7 @@ function App() {
                 onChange={(e) => setHealthSearch(e.target.value)}
               />
             </div>
-            <button className="btn btn-primary" onClick={() => { setPreselectedAnimalId(null); setIsHealthModalOpen(true); }}>
+            <button className="btn btn-primary" onClick={() => { setPreselectedAnimalId(null); setPreselectedTipo(null); setPreselectedProducto(null); setIsHealthModalOpen(true); }}>
               Registrar Tratamiento
             </button>
           </header>
@@ -332,7 +402,7 @@ function App() {
               <div className="empty-state">
                 <h2>No hay registros sanitarios</h2>
                 <p>No se encontraron tratamientos registrados para esta selección.</p>
-                <button className="btn btn-primary" onClick={() => { setPreselectedAnimalId(null); setIsHealthModalOpen(true); }}>
+                <button className="btn btn-primary" onClick={() => { setPreselectedAnimalId(null); setPreselectedTipo(null); setPreselectedProducto(null); setIsHealthModalOpen(true); }}>
                   Registrar Tratamiento
                 </button>
               </div>
@@ -358,6 +428,8 @@ function App() {
         healthRecords={healthRecords}
         onAddHealthRecord={(animalId) => {
           setPreselectedAnimalId(animalId);
+          setPreselectedTipo(null);
+          setPreselectedProducto(null);
           setIsHealthModalOpen(true);
         }}
         onAddNoteToRecord={handleAddClarificationNote}
@@ -374,10 +446,17 @@ function App() {
       {/* Modal de Registro de Tratamiento (HU-07) */}
       <HealthRecordFormModal
         isOpen={isHealthModalOpen}
-        onClose={() => { setIsHealthModalOpen(false); setPreselectedAnimalId(null); }}
+        onClose={() => {
+          setIsHealthModalOpen(false);
+          setPreselectedAnimalId(null);
+          setPreselectedTipo(null);
+          setPreselectedProducto(null);
+        }}
         onSave={handleSaveHealthRecord}
         animals={animals}
         preselectedAnimalId={preselectedAnimalId}
+        preselectedTipo={preselectedTipo}
+        preselectedProducto={preselectedProducto}
       />
     </div>
   );

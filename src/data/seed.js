@@ -107,5 +107,50 @@ export const SEED_HEALTH_RECORDS = [
         fechaProxima: "2026-08-30",
         notas: [],
         estado: "confirmado"
+    },
+    {
+        id: "REC-003",
+        animalId: "AN-003",
+        tipoTratamiento: "vacuna",
+        fechaAplicacion: "2026-05-05",
+        productoComercial: "Triple Bovino",
+        lote: "L-3344",
+        dosis: "5 ml",
+        viaAdministracion: "Intramuscular",
+        veterinario: "Dr. Rodrigo Arias (Lic. 1124)",
+        periodoRevacunacion: 30,
+        fechaProxima: "2026-06-05",
+        notas: [],
+        estado: "confirmado"
+    },
+    {
+        id: "REC-004",
+        animalId: "AN-004",
+        tipoTratamiento: "desparasitacion_interna",
+        fechaAplicacion: "2026-05-12",
+        productoComercial: "Ivermectina 1%",
+        lote: "L-9988",
+        dosis: "2 ml",
+        viaAdministracion: "Subcutánea",
+        veterinario: "Dr. Juan Pérez (Lic. 8855)",
+        periodoRevacunacion: 30,
+        fechaProxima: "2026-06-11",
+        notas: [],
+        estado: "confirmado"
+    },
+    {
+        id: "REC-005",
+        animalId: "AN-001",
+        tipoTratamiento: "vitamina_mineral",
+        fechaAplicacion: "2026-05-16",
+        productoComercial: "Vigantol",
+        lote: "L-4455",
+        dosis: "5 ml",
+        viaAdministracion: "Intramuscular",
+        veterinario: "Dr. Juan Pérez (Lic. 8855)",
+        periodoRevacunacion: 30,
+        fechaProxima: "2026-06-15",
+        notas: [],
+        estado: "confirmado"
     }
 ];
