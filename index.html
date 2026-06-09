@@ -1,13 +1,321 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>trazafinca</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrazaFinca - Plataforma de Gestión de Animales de Trabajo y Producción</title>
+  <!-- Google Fonts: Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="src/App.css">
+</head>
+
+<body>
+  <div class="app-container">
+    <!-- Sidebar principal -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+            stroke-linejoin="round" class="logo-icon">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+          </svg>
+          <span>TrazaFinca</span>
+        </div>
+        <p class="subtitle">Gestión de Animales</p>
+      </div>
+      <!-- Sección de estadísticas rápidas -->
+      <div class="stats-section">
+        <h3>Resumen de Finca</h3>
+        <div class="stats-grid">
+          <div class="stat-card" id="stat-total">
+            <span class="stat-num">0</span>
+            <span class="stat-label">Total</span>
+          </div>
+          <div class="stat-card active" id="stat-activos">
+            <span class="stat-num">0</span>
+            <span class="stat-label">Activos</span>
+          </div>
+          <div class="stat-card inactive" id="stat-bajas">
+            <span class="stat-num">0</span>
+            <span class="stat-label">Bajas</span>
+          </div>
+        </div>
+      </div>
+      <!-- Filtros principales en Sidebar -->
+      <div class="filter-group-sidebar">
+        <h3>Filtrar por Estado</h3>
+        <div class="radio-buttons-filter">
+          <label class="radio-label">
+            <input type="radio" name="status-filter" value="activos" checked>
+            <span class="custom-radio">Activos</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="status-filter" value="bajas">
+            <span class="custom-radio">Dados de Baja</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="status-filter" value="todos">
+            <span class="custom-radio">Todos</span>
+          </label>
+        </div>
+      </div>
+      <div class="sidebar-footer">
+        <p>Protótipo v1.0</p>
+      </div>
+    </aside>
+    <!-- Contenido principal -->
+    <main class="main-content">
+      <!-- Header superior -->
+      <header class="main-header">
+        <div class="header-search">
+          <div class="search-wrapper">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="search-input" placeholder="Buscar por ID, raza, especie o propósito...">
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-primary" id="btn-open-register">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="btn-icon">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Registrar Animal
+          </button>
+        </div>
+      </header>
+      <!-- Sección de filtros secundarios y chips -->
+      <section class="filters-toolbar">
+        <div class="toolbar-title">
+          <h1 id="list-title">Animales Activos</h1>
+          <span class="badge" id="animal-count">0 animales</span>
+        </div>
+        <div class="toolbar-filters">
+          <!-- Filtro por especie -->
+          <div class="select-wrapper">
+            <select id="filter-especie">
+              <option value="">Todas las especies</option>
+              <option value="bueyes">Bueyes</option>
+              <option value="caballos">Caballos</option>
+              <option value="burros">Burros</option>
+              <option value="vacas">Vacas</option>
+              <option value="cabras">Cabras</option>
+              <option value="ganado de engorde">Ganado de Engorde</option>
+            </select>
+          </div>
+          <!-- Filtro por propósito -->
+          <div class="select-wrapper">
+            <select id="filter-proposito">
+              <option value="">Todos los propósitos</option>
+              <option value="trabajo">Trabajo</option>
+              <option value="producción">Producción</option>
+              <option value="carne">Consumo de Carne</option>
+            </select>
+          </div>
+          <!-- Botón limpiar filtros -->
+          <button class="btn btn-secondary btn-icon-only" id="btn-clear-filters" title="Limpiar filtros">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 4H1L10 14v6l4 2v-8L23 4z"></path>
+            </svg>
+          </button>
+        </div>
+      </section>
+      <!-- Contenedor de la lista de animales -->
+      <section class="list-container">
+        <!-- Grid de tarjetas de animales -->
+        <div class="animals-grid" id="animals-grid">
+          <!-- Inyectado dinámicamente desde JS -->
+        </div>
+        <!-- Estado vacío -->
+        <div class="empty-state hidden" id="empty-state">
+          <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+              <path d="M16 8l-8 8M8 8l8 8" />
+            </svg>
+          </div>
+          <h2>No se encontraron animales</h2>
+          <p>No hay registros que coincidan con los criterios de búsqueda o no se ha ingresado ningún animal
+            todavía.</p>
+          <button class="btn btn-primary" id="btn-empty-state-action">Registrar el primer animal</button>
+        </div>
+      </section>
+    </main>
+  </div>
+  <!-- MODAL: REGISTRO / EDICIÓN DE ANIMAL -->
+  <div class="modal-overlay" id="modal-form">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="modal-form-title">Registrar Nuevo Animal</h2>
+        <button class="btn-close" id="btn-close-form">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <form id="animal-form" novalidate>
+        <!-- Alerta de campos obligatorios en el formulario -->
+        <div class="form-alert hidden" id="form-validation-alert">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="alert-icon">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>Por favor complete todos los campos obligatorios resaltados.</span>
+        </div>
+        <input type="hidden" id="edit-animal-id">
+        <div class="form-grid">
+          <!-- Especie (Obligatorio) -->
+          <div class="form-group" id="group-especie">
+            <label for="form-especie">Especie <span class="required">*</span></label>
+            <select id="form-especie" required>
+              <option value="" disabled selected>Seleccione la especie</option>
+              <option value="bueyes">Bueyes</option>
+              <option value="caballos">Caballos</option>
+              <option value="burros">Burros</option>
+              <option value="vacas">Vacas</option>
+              <option value="cabras">Cabras</option>
+              <option value="ganado de engorde">Ganado de Engorde</option>
+            </select>
+            <span class="error-msg">La especie es obligatoria y debe ser una de las especies
+              permitidas.</span>
+          </div>
+          <!-- Propósito (Obligatorio) -->
+          <div class="form-group" id="group-proposito">
+            <label for="form-proposito">Propósito <span class="required">*</span></label>
+            <select id="form-proposito" required>
+              <option value="" disabled selected>Seleccione el propósito</option>
+              <option value="trabajo">Trabajo</option>
+              <option value="producción">Producción</option>
+              <option value="carne">Consumo de Carne</option>
+            </select>
+            <span class="error-msg">El propósito es obligatorio.</span>
+          </div>
+          <!-- Sexo (Obligatorio) -->
+          <div class="form-group" id="group-sexo">
+            <label for="form-sexo">Sexo <span class="required">*</span></label>
+            <select id="form-sexo" required>
+              <option value="" disabled selected>Seleccione el sexo</option>
+              <option value="Macho">Macho</option>
+              <option value="Hembra">Hembra</option>
+            </select>
+            <span class="error-msg">El sexo es obligatorio.</span>
+          </div>
+          <!-- Raza (Opcional) -->
+          <div class="form-group">
+            <label for="form-raza">Raza</label>
+            <input type="text" id="form-raza" placeholder="Ej. Holstein, Pura Sangre...">
+          </div>
+          <!-- Fecha de Nacimiento o Ingreso (Opcional) -->
+          <div class="form-group">
+            <label for="form-fecha">Fecha de Nacimiento o Ingreso</label>
+            <input type="date" id="form-fecha">
+          </div>
+          <!-- Arete o Chapa Física (Opcional) -->
+          <div class="form-group">
+            <label for="form-arete">Código de Arete / Chapa Física</label>
+            <input type="text" id="form-arete" placeholder="Ej. AR-889021">
+            <span class="field-hint">Código grabado en la placa física del animal.</span>
+          </div>
+          <!-- Finca o Dueño Asociado (Opcional) -->
+          <div class="form-group full-width">
+            <label for="form-dueño">Finca / Dueño Asociado</label>
+            <input type="text" id="form-dueño" placeholder="Ej. Hacienda Las Tres Marías / Juan Pérez">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-form">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-animal">Guardar Animal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <!-- MODAL: FICHA DETALLADA DEL ANIMAL -->
+  <div class="modal-overlay" id="modal-detail">
+    <div class="modal-card detail-card">
+      <div class="modal-header">
+        <h2>Ficha del Animal</h2>
+        <div class="detail-header-actions">
+          <button class="btn btn-outline btn-sm" id="btn-edit-detail">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            Editar
+          </button>
+          <button class="btn-close" id="btn-close-detail">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="detail-content" id="detail-content-area">
+        <!-- Inyectado dinámicamente desde JS -->
+      </div>
+      <div class="detail-footer">
+        <button class="btn btn-secondary" id="btn-back-detail">Cerrar</button>
+        <button class="btn btn-danger" id="btn-baja-detail">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+            </path>
+          </svg>
+          Dar de Baja
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- MODAL: FORMULARIO DE BAJA -->
+  <div class="modal-overlay modal-nested" id="modal-baja">
+    <div class="modal-card baja-card">
+      <div class="modal-header">
+        <h2>Registrar Baja de Animal</h2>
+        <button class="btn-close" id="btn-close-baja">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <form id="baja-form">
+        <input type="hidden" id="baja-animal-id">
+        <div class="form-group">
+          <label for="form-baja-motivo">Motivo de la Baja <span class="required">*</span></label>
+          <select id="form-baja-motivo" required>
+            <option value="" disabled selected>Seleccione el motivo</option>
+            <option value="Vendido">Vendido</option>
+            <option value="Muerto">Muerto</option>
+            <option value="Sacrificado">Sacrificado</option>
+            <option value="Otro">Otro / Traspaso</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="form-baja-comentarios">Detalles / Comentarios adicionales</label>
+          <textarea id="form-baja-comentarios" rows="3"
+            placeholder="Ej. Detalle del comprador, enfermedad, accidente..."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="form-baja-fecha">Fecha de Baja <span class="required">*</span></label>
+          <input type="date" id="form-baja-fecha" required>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-baja">Cancelar</button>
+          <button type="submit" class="btn btn-danger">Confirmar Baja</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <!-- CONTENEDOR DE MENSAJES TOAST -->
+  <div class="toast-container" id="toast-container"></div>
+  <script type="module" src="/src/App.jsx"></script>
+</body>
+
 </html>
