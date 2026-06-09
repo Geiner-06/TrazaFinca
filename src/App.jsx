@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { SEED_ANIMALS } from './data/seed.js';
 import AnimalCard from './components/AnimalCard.jsx';
 import AnimalFormModal from './components/AnimalFormModal.jsx';
+import AnimalDetailModal from './components/AnimalDatailModal.jsx';
 import './App.css';
 
 function App() {
@@ -13,7 +14,7 @@ function App() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("activos");
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [selectedAnimal, setSelectedAnimal] = useState(null);
   useEffect(() => {
     localStorage.setItem("trazafinca_animals", JSON.stringify(animals));
   }, [animals]);
@@ -109,7 +110,13 @@ function App() {
 
           {filteredAnimals.length > 0 ? (
             <div className="animals-grid">
-              {filteredAnimals.map(a => <AnimalCard key={a.id} animal={a} />)}
+              {filteredAnimals.map(a => (
+                <AnimalCard
+                  key={a.id}
+                  animal={a}
+                  onClick={() => setSelectedAnimal(a)} // Abrir detalle al hacer clic
+                />
+              ))}
             </div>
           ) : (
             <div className="empty-state">
@@ -121,10 +128,17 @@ function App() {
         </section>
       </main>
 
+      {/* Modal de Registro */}
       <AnimalFormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveAnimal}
+      />
+
+      {/* Modal de Detalle (HU-03 / TF-17) */}
+      <AnimalDetailModal
+        animal={selectedAnimal}
+        onClose={() => setSelectedAnimal(null)}
       />
     </div>
   );
