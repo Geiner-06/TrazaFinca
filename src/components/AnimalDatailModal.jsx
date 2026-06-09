@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function AnimalDetailModal({ animal, onClose, onEdit }) {
+export default function AnimalDetailModal({ animal, onClose, onEdit, onBaja }) {
     if (!animal) return null;
 
     const specClass = `species-${animal.especie.replace(/\s+/g, '.')}`;
@@ -22,7 +22,6 @@ export default function AnimalDetailModal({ animal, onClose, onEdit }) {
                         <button className="btn btn-outline btn-sm" onClick={() => onEdit(animal)}>
                             Editar
                         </button>
-                        <button className="btn-close" onClick={onClose}>&times;</button>
                     </div>
                 </div>
 
@@ -85,7 +84,12 @@ export default function AnimalDetailModal({ animal, onClose, onEdit }) {
 
                 <div className="detail-footer">
                     <button className="btn btn-secondary" onClick={onClose}>Cerrar</button>
-                    {/* Los botones de Editar y Dar de Baja los activaremos en los siguientes commits */}
+                    {/* Solo mostrar botón de baja si está activo (HU-06) */}
+                    {animal.estado === 'activo' && (
+                        <button className="btn btn-danger" onClick={() => onBaja(animal.id)}>
+                            Dar de Baja
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
