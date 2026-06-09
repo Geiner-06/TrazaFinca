@@ -3,6 +3,7 @@ import { SEED_ANIMALS } from './data/seed.js';
 import AnimalCard from './components/AnimalCard.jsx';
 import AnimalFormModal from './components/AnimalFormModal.jsx';
 import AnimalDetailModal from './components/AnimalDatailModal.jsx';
+import BajaModal from './components/BajaModal.jsx';
 import './App.css';
 
 function App() {
@@ -15,6 +16,9 @@ function App() {
   const [statusFilter, setStatusFilter] = useState("activos");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAnimal, setSelectedAnimal] = useState(null);
+  const [isBajaModalOpen, setIsBajaModalOpen] = useState(false);
+  const [animalIdToBaja, setAnimalIdToBaja] = useState(null);
+
   useEffect(() => {
     localStorage.setItem("trazafinca_animals", JSON.stringify(animals));
   }, [animals]);
@@ -62,6 +66,29 @@ function App() {
     setAnimalToEdit(animal);
     setSelectedAnimal(null); // Cerramos el detalle
     setIsModalOpen(true);    // Abrimos el formulario
+  };
+
+  const handleConfirmBaja = (id, bajaInfo) => {
+    const updatedAnimals = animals.map(a => {
+      if (a.id === id) {
+        return {
+          ...a,
+          estado: 'baja',
+          bajaMotivo: bajaInfo.motivo,
+          bajaComentarios: bajaInfo.comentarios,
+          bajaFecha: bajaInfo.fecha
+        };
+      }
+      return a;
+    });
+    setAnimals(updatedAnimals);
+    setSelectedAnimal(null); // Cerrar ficha de detalle
+    setIsBajaModalOpen(false);
+  };
+
+  const openBajaModal = (id) => {
+    setAnimalIdToBaja(id);
+    setIsBajaModalOpen(true);
   };
 
   return (
@@ -153,6 +180,15 @@ function App() {
         animal={selectedAnimal}
         onClose={() => setSelectedAnimal(null)}
         onEdit={openEditModal}
+        onBaja={openBajaModal}
+      />
+
+      {/* Modal de Baja (HU-06) */}
+      <BajaModal
+        isOpen={isBajaModalOpen}
+        animalId={animalIdToBaja}
+        onClose={() => setIsBajaModalOpen(false)}
+        onConfirm={handleConfirmBaja}
       />
     </div>
   );
