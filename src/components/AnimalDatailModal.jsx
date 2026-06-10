@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import "../App.css"
+import { SEED_DIAGNOSES } from '../data/seed';
+import DiagnosisCard from './DiagnosisCard';
 
 export default function AnimalDetailModal({
     animal,
@@ -8,7 +10,8 @@ export default function AnimalDetailModal({
     onBaja,
     healthRecords = [],
     onAddHealthRecord,
-    onAddNoteToRecord
+    onAddNoteToRecord,
+    diagnoses = SEED_DIAGNOSES
 }) {
     const [activeNoteRecordId, setActiveNoteRecordId] = useState(null);
     const [newNoteText, setNewNoteText] = useState('');
@@ -19,7 +22,7 @@ export default function AnimalDetailModal({
     if (!animal) return null;
 
     const specClass = `species-${animal.especie.replace(/\s+/g, '.')}`;
-
+    const activeDiagnoses = diagnoses.filter(d => d.animalId === animal.id && d.estado === 'activo');
     // 1. Filtrar y ordenar historial (Cronológico Descendente - HU-09 Criterio 1)
     const animalRecords = healthRecords
         .filter(r => r.animalId === animal.id)
@@ -105,7 +108,7 @@ export default function AnimalDetailModal({
                 </div>
 
                 <div className="detail-content scrollable-history">
-                    {/* ADVERTENCIA DE RETIRO ROJA (HU-09 Criterio 4) */}
+                    {/* ADVERTENCIA DE RETIRO (HU-09 Criterio 4) */}
                     {withdrawal && (
                         <div className="withdrawal-banner">
                             <div className="withdrawal-banner-header">
@@ -242,6 +245,18 @@ export default function AnimalDetailModal({
                             </div>
                         ) : (
                             <p className="no-records-placeholder">Sin antecedentes sanitarios registrados.</p>
+                        )}
+                    </div>
+                    <div className="detail-health-section" style={{ marginTop: '30px' }}>
+                        <h3>Morbilidad y Diagnósticos</h3>
+                        {diagnoses.filter(d => d.animalId === animal.id).length > 0 ? (
+                            <div className="health-records-grid" style={{ gridTemplateColumns: '1fr' }}>
+                                {diagnoses.filter(d => d.animalId === animal.id).map(dx => (
+                                    <DiagnosisCard key={dx.id} diagnosis={dx} animal={animal} />
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="no-records-placeholder">No se registran enfermedades previas.</p>
                         )}
                     </div>
                 </div>
