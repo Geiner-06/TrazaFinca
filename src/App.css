@@ -2263,4 +2263,135 @@ textarea {
     width: 100%;
     padding: 0.85rem;
   }
+
+  /* BANNER DE RESTRICCIÓN SANITARIA */
+  .withdrawal-simple-box {
+    width: 100%;
+    background-color: #fef2f2;
+    border: 2px solid #dc2626;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+  }
+
+  .withdrawal-header-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    color: #991b1b;
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #fca5a5;
+  }
+
+  .withdrawal-status-label {
+    background-color: #dc2626;
+    color: white;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  .withdrawal-body-text {
+    color: #7f1d1d;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .withdrawal-date-footer {
+    background-color: #fca5a5;
+    color: #450a0a;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .withdrawal-date-footer strong {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #450a0a;
+  }
+
+  /* ==========================================================================
+   CONFIGURACIÓN PARA PDF (IMPRESIÓN) - REVISADA
+   ========================================================================== */
+  @media print {
+
+    /* Ocultar todo menos el modal */
+    body * {
+      visibility: hidden;
+    }
+
+    #root,
+    .modal-overlay,
+    .modal-overlay.open,
+    .modal-card.detail-card,
+    .modal-card.detail-card * {
+      visibility: visible;
+    }
+
+    /* Quitar el fondo gris y el scroll */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: white !important;
+    }
+
+    .modal-card.detail-card {
+      box-shadow: none !important;
+      border: none !important;
+      width: 100% !important;
+      height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
+    }
+
+    .detail-content {
+      max-height: none !important;
+      overflow: visible !important;
+      padding: 0 !important;
+    }
+
+    .withdrawal-simple-box {
+      background-color: #fef2f2 !important;
+      border: 2px solid #000 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .withdrawal-date-footer {
+      background-color: #fca5a5 !important;
+      color: #000 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .withdrawal-date-footer strong {
+      color: #000 !important;
+    }
+  }
+
+  /* Ocultar botones e inputs de notas */
+  .btn,
+  .btn-close,
+  .detail-header-actions,
+  .detail-footer,
+  .btn-link-note,
+  .detail-note-input-row {
+    display: none !important;
+  }
 }
