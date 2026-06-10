@@ -2394,4 +2394,202 @@ textarea {
   .detail-note-input-row {
     display: none !important;
   }
+
+  /* Estilos para el modal de diagnostico */
+  /* Caja de advertencia SENASA en formulario */
+  .senasa-warning-box {
+    grid-column: span 2;
+    background-color: #fffbeb;
+    border: 1px solid #f59e0b;
+    padding: 12px;
+    border-radius: 6px;
+    color: #92400e;
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+  }
+
+  .senasa-warning-box strong {
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* Banner de Caso Activo en Ficha */
+  .active-diagnosis-banner {
+    margin-bottom: 15px;
+  }
+
+  .dx-alert-item {
+    background-color: #fee2e2;
+    border: 1px solid #ef4444;
+    color: #991b1b;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+
+  /* ==========================================================================
+   HU-10: ALERTAS DE DIAGNÓSTICO Y SENASA
+   ========================================================================== */
+
+  /* 1. Caja de aviso en el Formulario (Aviso Legal) */
+  .senasa-notification-box {
+    grid-column: span 2;
+    background-color: #fffbeb !important;
+    border-left: 6px solid #f59e0b !important;
+    padding: 1rem !important;
+    margin: 1rem 0 !important;
+    border-radius: 8px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .senasa-notification-box strong {
+    color: #92400e;
+    display: block;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+    font-weight: 800;
+  }
+
+  .senasa-notification-box p {
+    color: #b45309;
+    font-size: 0.8rem;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  /* 2. Banner de Caso Activo en la Ficha del Animal */
+  .diagnosis-alert-banner {
+    background-color: #fef2f2 !important;
+    border: 2px solid #ef4444 !important;
+    padding: 12px 16px !important;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.1);
+  }
+
+  .alert-emoji {
+    font-size: 1.4rem;
+  }
+
+  .alert-info-text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .alert-info-text .label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #991b1b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .alert-info-text .value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #7f1d1d;
+  }
+
+  /* ==========================================================================*/
+  /* Grid de Diagnósticos en Pestaña Salud */
+  .diagnosis-list-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+
+  .dx-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    border-top: 5px solid var(--text-light);
+  }
+
+  .dx-card.activo {
+    border-top-color: #ef4444;
+  }
+
+  /* Rojo si está enfermo */
+  .dx-card.resuelto {
+    border-top-color: #10b981;
+  }
+
+  /* Verde si ya sanó */
+
+  .dx-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .dx-card-body p {
+    font-size: 0.85rem;
+    margin: 4px 0;
+    color: var(--text-muted);
+  }
+
+  .dx-card-body p span {
+    font-weight: 700;
+    color: var(--text-main);
+  }
+
+  .senasa-tag {
+    background: #fffbeb;
+    color: #92400e;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-top: 10px;
+    display: inline-block;
+    border: 1px solid #f59e0b;
+  }
+
+  .dx-status-pill {
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .dx-status-pill.activo {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .dx-status-pill.resuelto {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .diagnosis-name-display {
+    font-size: 1.25rem;
+    color: var(--text-main);
+    font-weight: 800;
+    margin-top: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+  }
+
+  .diagnosis-item-card {
+    border-top: 4px solid #94a3b8;
+  }
+
+  .diagnosis-item-card.activo {
+    border-top-color: #ef4444;
+  }
+
+  .diagnosis-item-card.resuelto {
+    border-top-color: #10b981;
+  }
 }

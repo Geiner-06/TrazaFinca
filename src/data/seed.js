@@ -159,3 +159,16 @@ export const SEED_HEALTH_RECORDS = [
         estado: "confirmado"
     }
 ];
+
+export const SEED_DIAGNOSES = [
+    {
+        id: "DX-001",
+        animalId: "AN-001",
+        fecha: "2026-06-01",
+        sintomas: "Fiebre alta y lesiones en la boca.",
+        diagnostico: "Fiebre Aftosa",
+        esNotificable: true,
+        tratamiento: "Aislamiento total y desinfección.",
+        estado: "activo"
+    }
+];

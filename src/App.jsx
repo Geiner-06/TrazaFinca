@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { SEED_ANIMALS, SEED_HEALTH_RECORDS } from './data/seed.js';
+import { SEED_ANIMALS, SEED_HEALTH_RECORDS, SEED_DIAGNOSES } from './data/seed.js';
 import AnimalCard from './components/AnimalCard.jsx';
 import AnimalFormModal from './components/AnimalFormModal.jsx';
 import AnimalDetailModal from './components/AnimalDatailModal.jsx';
@@ -7,6 +7,8 @@ import BajaModal from './components/BajaModal.jsx';
 import HealthRecordFormModal from './components/HealthRecordFormModal.jsx';
 import HealthRecordCard from './components/HealthRecordCard.jsx';
 import AlertDashboard from './components/AlertDashboard.jsx';
+import DiagnosisFormModal from './components/DiagnosisFormModal.jsx';
+import DiagnosisCard from './components/DiagnosisCard.jsx';
 import './App.css';
 
 function App() {
@@ -21,6 +23,12 @@ function App() {
   const [selectedAnimal, setSelectedAnimal] = useState(null);
   const [isBajaModalOpen, setIsBajaModalOpen] = useState(false);
   const [animalIdToBaja, setAnimalIdToBaja] = useState(null);
+  const [diagnoses, setDiagnoses] = useState(() => {
+    const saved = localStorage.getItem("trazafinca_diagnoses");
+    // Si hay guardados, usarlos; si no, usar los de seed.js
+    return saved ? JSON.parse(saved) : SEED_DIAGNOSES;
+  });
+
 
   useEffect(() => {
     localStorage.setItem("trazafinca_animals", JSON.stringify(animals));
@@ -220,6 +228,18 @@ function App() {
     setIsBajaModalOpen(true);
   };
 
+  const [isDxModalOpen, setIsDxModalOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem("trazafinca_diagnoses", JSON.stringify(diagnoses));
+  }, [diagnoses]);
+
+  const handleSaveDiagnosis = (dxData) => {
+    const newId = `DX-${String(diagnoses.length + 1).padStart(3, '0')}`;
+    setDiagnoses([...diagnoses, { ...dxData, id: newId }]);
+    setIsDxModalOpen(false);
+  };
+
   return (
     <div className="app-container">
       <aside className="sidebar">
@@ -359,9 +379,14 @@ function App() {
                 onChange={(e) => setHealthSearch(e.target.value)}
               />
             </div>
-            <button className="btn btn-primary" onClick={() => { setPreselectedAnimalId(null); setPreselectedTipo(null); setPreselectedProducto(null); setIsHealthModalOpen(true); }}>
-              Registrar Tratamiento
-            </button>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn btn-outline" onClick={() => setIsDxModalOpen(true)}>
+                Registrar Diagnóstico
+              </button>
+              <button className="btn btn-primary" onClick={() => { setPreselectedAnimalId(null); setPreselectedTipo(null); setPreselectedProducto(null); setIsHealthModalOpen(true); }}>
+                Registrar Tratamiento
+              </button>
+            </div>
           </header>
 
           <section className="list-container">
@@ -407,6 +432,26 @@ function App() {
                 </button>
               </div>
             )}
+            <div className="toolbar-title" style={{ marginTop: '40px' }}>
+              <h1>Historial de Diagnósticos y Morbilidad</h1>
+              <span className="badge">{diagnoses.length} casos</span>
+            </div>
+
+            {diagnoses.length > 0 ? (
+              <div className="health-records-grid"> {/* Reutilizamos el grid de salud */}
+                {diagnoses.map(dx => (
+                  <DiagnosisCard
+                    key={dx.id}
+                    diagnosis={dx}
+                    animal={animals.find(a => a.id === dx.animalId)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <p>No hay diagnósticos médicos registrados aún.</p>
+              </div>
+            )}
           </section>
         </main>
       )}
@@ -426,6 +471,7 @@ function App() {
         onEdit={openEditModal}
         onBaja={openBajaModal}
         healthRecords={healthRecords}
+        diagnoses={diagnoses}
         onAddHealthRecord={(animalId) => {
           setPreselectedAnimalId(animalId);
           setPreselectedTipo(null);
@@ -457,6 +503,13 @@ function App() {
         preselectedAnimalId={preselectedAnimalId}
         preselectedTipo={preselectedTipo}
         preselectedProducto={preselectedProducto}
+      />
+      {/* Modal de Diagnostico */}
+      <DiagnosisFormModal
+        isOpen={isDxModalOpen}
+        onClose={() => setIsDxModalOpen(false)}
+        onSave={handleSaveDiagnosis}
+        animals={animals}
       />
     </div>
   );
