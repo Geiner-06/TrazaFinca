@@ -84,6 +84,7 @@ export const SEED_HEALTH_RECORDS = [
         veterinario: "Dr. Rodrigo Arias (Lic. 1124)",
         periodoRevacunacion: 180,
         fechaProxima: "2026-11-06",
+        periodoRetiro: 30,
         notas: [
             {
                 id: 1,
@@ -105,6 +106,7 @@ export const SEED_HEALTH_RECORDS = [
         veterinario: "Dr. Rodrigo Arias (Lic. 1124)",
         periodoRevacunacion: 90,
         fechaProxima: "2026-08-30",
+        periodoRetiro: 14,
         notas: [],
         estado: "confirmado"
     },
@@ -120,6 +122,7 @@ export const SEED_HEALTH_RECORDS = [
         veterinario: "Dr. Rodrigo Arias (Lic. 1124)",
         periodoRevacunacion: 30,
         fechaProxima: "2026-06-05",
+        periodoRetiro: 28,
         notas: [],
         estado: "confirmado"
     },
@@ -127,14 +130,15 @@ export const SEED_HEALTH_RECORDS = [
         id: "REC-004",
         animalId: "AN-004",
         tipoTratamiento: "desparasitacion_interna",
-        fechaAplicacion: "2026-05-12",
+        fechaAplicacion: "2026-05-05",
         productoComercial: "Ivermectina 1%",
         lote: "L-9988",
         dosis: "2 ml",
         viaAdministracion: "Subcutánea",
         veterinario: "Dr. Juan Pérez (Lic. 8855)",
         periodoRevacunacion: 30,
-        fechaProxima: "2026-06-11",
+        fechaProxima: "2026-06-12",
+        periodoRetiro: 28,
         notas: [],
         estado: "confirmado"
     },
@@ -150,6 +154,7 @@ export const SEED_HEALTH_RECORDS = [
         veterinario: "Dr. Juan Pérez (Lic. 8855)",
         periodoRevacunacion: 30,
         fechaProxima: "2026-06-15",
+        periodoRetiro: 0,
         notas: [],
         estado: "confirmado"
     }
