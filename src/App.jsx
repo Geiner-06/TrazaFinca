@@ -9,6 +9,7 @@ import HealthRecordCard from './components/HealthRecordCard.jsx';
 import AlertDashboard from './components/AlertDashboard.jsx';
 import DiagnosisFormModal from './components/DiagnosisFormModal.jsx';
 import DiagnosisCard from './components/DiagnosisCard.jsx';
+import CollectiveVaccinationModal from './components/CollectiveVaccinationModal.jsx';
 import './App.css';
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
     // Si hay guardados, usarlos; si no, usar los de seed.js
     return saved ? JSON.parse(saved) : SEED_DIAGNOSES;
   });
+  const [isCollectiveModalOpen, setIsCollectiveModalOpen] = useState(false);
 
 
   useEffect(() => {
@@ -240,6 +242,43 @@ function App() {
     setIsDxModalOpen(false);
   };
 
+  const handleSaveCollectiveCampaign = (animalIds, commonData) => {
+    // 1. Crear registros individuales idénticos (Criterio 2)
+    const newRecords = animalIds.map((animalId, index) => {
+      const nextId = healthRecords.length + 1 + index;
+      const newId = `REC-${String(nextId).padStart(3, '0')}`;
+
+      // Calcular fecha próxima si aplica
+      let fechaProxima = null;
+      if (commonData.periodoRevacunacion) {
+        const date = new Date(commonData.fechaAplicacion);
+        date.setDate(date.getDate() + parseInt(commonData.periodoRevacunacion));
+        fechaProxima = date.toISOString().split('T')[0];
+      }
+
+      return {
+        ...commonData,
+        id: newId,
+        animalId: animalId,
+        fechaProxima,
+        notas: [{ id: 1, texto: "Registro de campaña colectiva.", fecha: commonData.fechaAplicacion }],
+        estado: 'confirmado'
+      };
+    });
+
+    setHealthRecords([...healthRecords, ...newRecords]);
+    setIsCollectiveModalOpen(false);
+
+    // 2. Generar resumen para SENASA (Criterio 3)
+    const totalDosis = animalIds.length * parseFloat(commonData.dosis || 0);
+    alert(`✅ Campaña Finalizada con éxito\n` +
+      `-------------------------------\n` +
+      `Tratamiento: ${commonData.tipoTratamiento.toUpperCase()}\n` +
+      `Producto: ${commonData.productoComercial}\n` +
+      `Animales Tratados: ${animalIds.length}\n` +
+      `Total Dosis Estimada: ${totalDosis} ${commonData.dosis.replace(/[0-9.]/g, '')}`);
+  };
+
   return (
     <div className="app-container">
       <aside className="sidebar">
@@ -380,6 +419,9 @@ function App() {
               />
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn btn-secondary" onClick={() => setIsCollectiveModalOpen(true)}>
+                Vacunación Colectiva
+              </button>
               <button className="btn btn-outline" onClick={() => setIsDxModalOpen(true)}>
                 Registrar Diagnóstico
               </button>
@@ -509,6 +551,13 @@ function App() {
         isOpen={isDxModalOpen}
         onClose={() => setIsDxModalOpen(false)}
         onSave={handleSaveDiagnosis}
+        animals={animals}
+      />
+      {/* Modal de Vacunación Colectiva (HU-11) */}
+      <CollectiveVaccinationModal
+        isOpen={isCollectiveModalOpen}
+        onClose={() => setIsCollectiveModalOpen(false)}
+        onSave={handleSaveCollectiveCampaign}
         animals={animals}
       />
     </div>
