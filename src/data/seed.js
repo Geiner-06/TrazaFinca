@@ -172,3 +172,116 @@ export const SEED_DIAGNOSES = [
         estado: "activo"
     }
 ];
+
+export const SEED_INVENTORY = [
+    {
+        id: "INV-001",
+        nombre: "Antraxvac",
+        principioActivo: "Cepa Sterne",
+        lote: "L-9988-A",
+        fechaVencimiento: "2026-07-10",
+        cantidad: 500,
+        unidad: "ml",
+        umbralMinimo: 50,
+        almacenamiento: "Refrigeración 2-8°C"
+    },
+    {
+        id: "INV-002",
+        nombre: "Ivermectina 1%",
+        principioActivo: "Ivermectina",
+        lote: "L-9988",
+        fechaVencimiento: "2027-12-20",
+        cantidad: 45,
+        unidad: "ml",
+        umbralMinimo: 100,
+        almacenamiento: "Temperatura ambiente"
+    },
+    {
+        id: "INV-003",
+        nombre: "Vacuna Triple Bovina",
+        principioActivo: "Clostridium chauvoei y otros",
+        lote: "VTB-24001",
+        fechaVencimiento: "2027-04-15",
+        cantidad: 250,
+        unidad: "ml",
+        umbralMinimo: 80,
+        almacenamiento: "Refrigeración 2-8°C"
+    },
+    {
+        id: "INV-004",
+        nombre: "Vitamina ADE",
+        principioActivo: "Vitaminas A, D3 y E",
+        lote: "ADE-5588",
+        fechaVencimiento: "2028-01-10",
+        cantidad: 180,
+        unidad: "ml",
+        umbralMinimo: 50,
+        almacenamiento: "Temperatura ambiente"
+    },
+    {
+        id: "INV-005",
+        nombre: "Oxitetraciclina LA",
+        principioActivo: "Oxitetraciclina",
+        lote: "OTC-7781",
+        fechaVencimiento: "2027-09-30",
+        cantidad: 90,
+        unidad: "ml",
+        umbralMinimo: 100,
+        almacenamiento: "Temperatura ambiente"
+    },
+    {
+        id: "INV-006",
+        nombre: "Albendazol Oral",
+        principioActivo: "Albendazol",
+        lote: "ALB-2309",
+        fechaVencimiento: "2026-08-20",
+        cantidad: 320,
+        unidad: "ml",
+        umbralMinimo: 75,
+        almacenamiento: "Temperatura ambiente"
+    },
+    {
+        id: "INV-007",
+        nombre: "Vacuna Brucelosis RB51",
+        principioActivo: "Brucella abortus RB51",
+        lote: "BRU-5520",
+        fechaVencimiento: "2026-09-05",
+        cantidad: 30,
+        unidad: "dosis",
+        umbralMinimo: 50,
+        almacenamiento: "Refrigeración 2-8°C"
+    },
+    {
+        id: "INV-008",
+        nombre: "Levamisol 10%",
+        principioActivo: "Levamisol",
+        lote: "LEV-9087",
+        fechaVencimiento: "2027-11-12",
+        cantidad: 400,
+        unidad: "ml",
+        umbralMinimo: 100,
+        almacenamiento: "Temperatura ambiente"
+    },
+    {
+        id: "INV-009",
+        nombre: "Vacuna Rabia Bovina",
+        principioActivo: "Virus inactivado de rabia",
+        lote: "RAB-4512",
+        fechaVencimiento: "2026-06-25",
+        cantidad: 60,
+        unidad: "dosis",
+        umbralMinimo: 40,
+        almacenamiento: "Refrigeración 2-8°C"
+    },
+    {
+        id: "INV-010",
+        nombre: "Selenio + Vitamina E",
+        principioActivo: "Selenito de sodio y Vitamina E",
+        lote: "SEV-1114",
+        fechaVencimiento: "2028-02-18",
+        cantidad: 120,
+        unidad: "ml",
+        umbralMinimo: 30,
+        almacenamiento: "Temperatura ambiente"
+    }
+];
