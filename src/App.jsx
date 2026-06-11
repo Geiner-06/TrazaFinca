@@ -11,6 +11,7 @@ import DiagnosisFormModal from './components/DiagnosisFormModal.jsx';
 import DiagnosisCard from './components/DiagnosisCard.jsx';
 import CollectiveVaccinationModal from './components/CollectiveVaccinationModal.jsx';
 import InventoryDashboard from './components/InventoryDashboard.jsx';
+import WithdrawalMonitor from './components/WithdrawalMonitor.jsx';
 import './App.css';
 
 function App() {
@@ -31,7 +32,6 @@ function App() {
     return saved ? JSON.parse(saved) : SEED_DIAGNOSES;
   });
   const [isCollectiveModalOpen, setIsCollectiveModalOpen] = useState(false);
-
 
   useEffect(() => {
     localStorage.setItem("trazafinca_animals", JSON.stringify(animals));
@@ -312,6 +312,41 @@ function App() {
     );
   });
 
+  const TODAY_STR = '2026-06-09';
+
+  const withdrawalList = healthRecords.reduce((acc, record) => {
+    const appDate = new Date(record.fechaAplicacion.replace(/-/g, '/'));
+    const today = new Date(TODAY_STR.replace(/-/g, '/'));
+
+    // Calcular fechas de liberación
+    const getReleaseDate = (days) => {
+      if (!days) return null;
+      const date = new Date(appDate);
+      date.setDate(appDate.getDate() + days);
+      return date;
+    };
+
+    const releaseCarne = getReleaseDate(record.periodoRetiroCarne);
+    const releaseLeche = getReleaseDate(record.periodoRetiroLeche);
+
+    const isRestrictedCarne = releaseCarne && releaseCarne > today;
+    const isRestrictedLeche = releaseLeche && releaseLeche > today;
+
+    if (isRestrictedCarne || isRestrictedLeche) {
+      acc.push({
+        animalId: record.animalId,
+        arete: animals.find(a => a.id === record.animalId)?.arete,
+        producto: record.productoComercial,
+        fechaAplicacion: record.fechaAplicacion,
+        isRestrictedCarne,
+        isRestrictedLeche,
+        releaseCarne: releaseCarne?.toISOString().split('T')[0],
+        releaseLeche: releaseLeche?.toISOString().split('T')[0]
+      });
+    }
+    return acc;
+  }, []);
+
   return (
     <div className="app-container">
       <aside className="sidebar">
@@ -396,6 +431,7 @@ function App() {
           </header>
 
           <section className="list-container">
+            <WithdrawalMonitor list={withdrawalList} />
             <AlertDashboard
               alerts={activeAlertsList}
               animals={animals}
