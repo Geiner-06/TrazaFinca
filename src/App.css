@@ -3017,3 +3017,76 @@ textarea {
     grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   }
 }
+
+/* ==========================================================================
+  InventoryDashboard — estilos con prefijo inv-
+   ========================================================================== */
+
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.inventory-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+
+.inventory-card.urgente {
+  border: 2px solid var(--warning);
+  background: #fffbeb;
+}
+
+.inventory-card.vencido {
+  border: 2px solid var(--danger);
+  background: #fef2f2;
+}
+
+.inv-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.inv-body p {
+  font-size: 0.85rem;
+  margin: 5px 0;
+  color: var(--text-muted);
+}
+
+.inv-body p span {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.stock-meter {
+  margin-top: 1rem;
+  background: var(--background);
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.stock-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  transition: width 0.5s ease-in-out;
+}

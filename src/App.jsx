@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { SEED_ANIMALS, SEED_HEALTH_RECORDS, SEED_DIAGNOSES } from './data/seed.js';
+import { SEED_ANIMALS, SEED_HEALTH_RECORDS, SEED_DIAGNOSES, SEED_INVENTORY } from './data/seed.js';
 import AnimalCard from './components/AnimalCard.jsx';
 import AnimalFormModal from './components/AnimalFormModal.jsx';
 import AnimalDetailModal from './components/AnimalDatailModal.jsx';
@@ -10,6 +10,7 @@ import AlertDashboard from './components/AlertDashboard.jsx';
 import DiagnosisFormModal from './components/DiagnosisFormModal.jsx';
 import DiagnosisCard from './components/DiagnosisCard.jsx';
 import CollectiveVaccinationModal from './components/CollectiveVaccinationModal.jsx';
+import InventoryDashboard from './components/InventoryDashboard.jsx';
 import './App.css';
 
 function App() {
@@ -54,6 +55,16 @@ function App() {
     localStorage.setItem("trazafinca_health_records", JSON.stringify(healthRecords));
   }, [healthRecords]);
 
+  const [inventorySearch, setInventorySearch] = useState("");
+  const [inventory, setInventory] = useState(() => {
+    const saved = localStorage.getItem("trazafinca_inventory");
+    return saved ? JSON.parse(saved) : SEED_INVENTORY;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("trazafinca_inventory", JSON.stringify(inventory));
+  }, [inventory]);
+
   // TF-16: Generación de ID Único
   const handleSaveAnimal = (newData) => {
     if (animalToEdit) {
@@ -86,9 +97,9 @@ function App() {
     return matchesSearch && matchesStatus;
   });
 
-  // HU-07: Guardar Registro Sanitario
+  // HU-07 & HU-12: Guardar Registro Sanitario y Descontar Inventario
   const handleSaveHealthRecord = (newRecordData) => {
-    // 1. Generar ID para el nuevo registro
+    // 1. Generar ID para el nuevo registro sanitario
     const numbers = healthRecords.map(r => {
       const match = r.id.match(/^REC-(\d+)$/);
       return match ? parseInt(match[1], 10) : 0;
@@ -96,7 +107,7 @@ function App() {
     const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
     const newId = `REC-${String(maxNum + 1).padStart(3, '0')}`;
 
-    // 2. Calcular fecha próxima si aplica
+    // 2. Calcular fecha próxima (Revacunación) si aplica
     let fechaProxima = null;
     if (newRecordData.periodoRevacunacion && parseInt(newRecordData.periodoRevacunacion, 10) > 0) {
       const days = parseInt(newRecordData.periodoRevacunacion, 10);
@@ -109,6 +120,7 @@ function App() {
       fechaProxima = `${y}-${m}-${d}`;
     }
 
+    // 3. Crear el objeto del nuevo registro
     const newRecord = {
       ...newRecordData,
       id: newId,
@@ -117,24 +129,36 @@ function App() {
       estado: 'confirmado'
     };
 
-    // Buscamos registros antiguos del mismo animal y tipo que tengan una alerta pendiente
-    const updatedRecords = healthRecords.map(r => {
+    // 4. LÓGICA DE INVENTARIO (HU-12): Descontar dosis del stock
+    const updatedInventory = inventory.map(item => {
+      // Comparamos nombre y lote exactamente
+      if (item.nombre === newRecordData.productoComercial && item.lote === newRecordData.lote) {
+        const dosisNum = parseFloat(newRecordData.dosis); // Extrae el número de "5 ml" o "2 cc"
+        if (!isNaN(dosisNum)) {
+          return { ...item, cantidad: Math.max(0, item.cantidad - dosisNum) };
+        }
+      }
+      return item;
+    });
+    setInventory(updatedInventory);
+
+    // 5. LÓGICA DE ALERTAS (HU-08): Resolver alertas antiguas pendientes
+    const updatedHealthRecords = healthRecords.map(r => {
       if (
         r.animalId === newRecordData.animalId &&
         r.tipoTratamiento === newRecordData.tipoTratamiento &&
         r.fechaProxima &&
         !r.alertaAtendida
       ) {
-        // Marcamos el registro viejo como atendido porque acabamos de crear uno nuevo hoy
         return { ...r, alertaAtendida: true };
       }
       return r;
     });
 
-    // 3. Guardamos tanto los registros actualizados como el nuevo
-    setHealthRecords([...updatedRecords, newRecord]);
+    // 6. ACTUALIZAR ESTADO FINAL (Un solo setHealthRecords)
+    setHealthRecords([...updatedHealthRecords, newRecord]);
 
-    // 4. Cerrar modal y limpiar estados
+    // 7. CERRAR MODAL Y LIMPIAR
     setIsHealthModalOpen(false);
     setPreselectedAnimalId(null);
     setPreselectedTipo(null);
@@ -279,6 +303,15 @@ function App() {
       `Total Dosis Estimada: ${totalDosis} ${commonData.dosis.replace(/[0-9.]/g, '')}`);
   };
 
+  const filteredInventory = inventory.filter(item => {
+    const term = inventorySearch.toLowerCase();
+    return (
+      item.nombre.toLowerCase().includes(term) ||
+      item.lote.toLowerCase().includes(term) ||
+      item.principioActivo.toLowerCase().includes(term)
+    );
+  });
+
   return (
     <div className="app-container">
       <aside className="sidebar">
@@ -308,6 +341,12 @@ function App() {
               onClick={() => setActiveTab('salud')}
             >
               <span className="nav-icon">💉</span> Historial Sanitario
+            </button>
+            <button
+              className={`nav-btn ${activeTab === 'inventario' ? 'active' : ''}`}
+              onClick={() => setActiveTab('inventario')}
+            >
+              <span className="nav-icon">📦</span> Inventario
             </button>
           </div>
         </div>
@@ -407,6 +446,31 @@ function App() {
             )}
           </section>
         </main>
+      ) : activeTab === 'inventario' ? (
+
+        <main className="main-content">
+          <header className="main-header">
+            <div className="search-wrapper">
+              <input
+                type="text"
+                placeholder="Buscar por Lote o Nombre del producto..."
+                value={inventorySearch}
+                onChange={(e) => setInventorySearch(e.target.value)}
+              />
+            </div>
+          </header>
+          <section className="list-container">
+            <InventoryDashboard
+              inventory={filteredInventory}
+            />
+            {filteredInventory.length === 0 && (
+              <div className="empty-state">
+                <p>No se encontraron productos que coincidan con "{inventorySearch}"</p>
+              </div>
+            )}
+          </section>
+        </main>
+
       ) : (
         <main className="main-content">
           <header className="main-header">
