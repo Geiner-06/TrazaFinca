@@ -38,7 +38,7 @@ export default function DiagnosisFormModal({ isOpen, onClose, onSave, animals })
             <div className="modal-card" style={{ maxWidth: '600px' }}>
                 <div className="modal-header">
                     <h2>Registrar Diagnóstico Clínico</h2>
-                    <button className="btn-close" onClick={onClose}>&times;</button>
+                    <button type="button" aria-label="Cerrar" className="btn-close" onClick={onClose}>&times;</button>
                 </div>
                 <form onSubmit={handleSubmit} style={{ padding: '20px' }}>
                     <div className="form-grid">
@@ -64,7 +64,7 @@ export default function DiagnosisFormModal({ isOpen, onClose, onSave, animals })
                         {/* ADVERTENCIA SENASA (Criterio 3) */}
                         {selectedEnfermedad?.notificable && (
                             <div className="senasa-notification-box">
-                                <span style={{ fontSize: '1.5rem' }}>⚠</span>
+                                <span style={{ fontSize: '1.5rem', fontWeight: 700 }}>!</span>
                                 <div>
                                     <strong>NOTIFICACIÓN OBLIGATORIA SENASA</strong>
                                     <p>Esta enfermedad es de interés nacional. Debe reportar este caso a las autoridades de salud animal de inmediato.</p>

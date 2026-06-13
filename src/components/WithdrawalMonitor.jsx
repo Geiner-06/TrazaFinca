@@ -9,7 +9,7 @@ export default function WithdrawalMonitor({ list }) {
     return (
         <div className="withdrawal-monitor-container">
             <div className="toolbar-title">
-                <h2>🚫 Restricción de Despacho (Retiro)</h2>
+                <h2>Restricción de Despacho (Retiro)</h2>
                 <span className="badge danger">{list.length} Animales Bloqueados</span>
             </div>
 
@@ -28,7 +28,7 @@ export default function WithdrawalMonitor({ list }) {
                             <tr key={idx}>
                                 <td>
                                     <strong>{item.animalId}</strong>
-                                    <div className="sub-text">🏷️ {item.arete || 'S/A'}</div>
+                                    <div className="sub-text">Arete: {item.arete || 'S/A'}</div>
                                 </td>
                                 <td>
                                     <strong>{item.producto}</strong>
@@ -37,16 +37,16 @@ export default function WithdrawalMonitor({ list }) {
                                 <td>
                                     {item.isRestrictedCarne ? (
                                         <div className="status-pill-withdrawal meat">
-                                            ⚠️ LIBERA: {formatDate(item.releaseCarne)}
+                                            LIBERA: {formatDate(item.releaseCarne)}
                                         </div>
-                                    ) : <span className="ok-check">✔️ APTO</span>}
+                                    ) : <span className="ok-check">✓ APTO</span>}
                                 </td>
                                 <td>
                                     {item.isRestrictedLeche ? (
                                         <div className="status-pill-withdrawal milk">
-                                            🥛 LIBERA: {formatDate(item.releaseLeche)}
+                                            LIBERA: {formatDate(item.releaseLeche)}
                                         </div>
-                                    ) : <span className="ok-check">✔️ APTO</span>}
+                                    ) : <span className="ok-check">✓ APTO</span>}
                                 </td>
                             </tr>
                         ))}
@@ -54,7 +54,7 @@ export default function WithdrawalMonitor({ list }) {
                 </table>
                 {list.length === 0 && (
                     <div className="empty-state-mini">
-                        ✅ No hay animales en período de retiro actualmente.
+                        No hay animales en período de retiro actualmente.
                     </div>
                 )}
             </div>

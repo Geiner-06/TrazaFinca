@@ -79,7 +79,7 @@ export default function HealthRecordFormModal({ isOpen, onClose, onSave, animals
             <div className="modal-card" style={{ maxWidth: '700px' }}>
                 <div className="modal-header">
                     <h2>Registrar Tratamiento Sanitario</h2>
-                    <button className="btn-close" onClick={onClose}>&times;</button>
+                    <button type="button" aria-label="Cerrar" className="btn-close" onClick={onClose}>&times;</button>
                 </div>
                 <form onSubmit={handleSubmit} noValidate style={{ padding: '1.5rem' }}>
                     {submitted && Object.keys(errors).length > 0 && (

@@ -95,14 +95,14 @@ export default function AlertDashboard({ alerts = [], animals = [], healthRecord
                                     <div className="alert-info-main">
                                         <div className="alert-animal-info">
                                             <span className="id-tag">{alert.animalId}</span>
-                                            <span className="arete-tag">🏷️ {animal?.arete || 'S/A'}</span>
+                                            <span className="arete-tag">Arete: {animal?.arete || 'S/A'}</span>
                                         </div>
                                         <h4 className="treatment-name">
                                             {getTreatmentLabel(alert.tipoTratamiento)}: <strong>{alert.productoComercial}</strong>
                                         </h4>
                                         <div className="alert-meta-data">
-                                            <span>📅 Programado: <strong>{formatDate(alert.fechaProxima)}</strong></span>
-                                            <span>📦 Lote previo: <strong>{alert.lote}</strong></span>
+                                            <span>Programado: <strong>{formatDate(alert.fechaProxima)}</strong></span>
+                                            <span>Lote previo: <strong>{alert.lote}</strong></span>
                                         </div>
                                     </div>
                                     <div className="alert-action-side">

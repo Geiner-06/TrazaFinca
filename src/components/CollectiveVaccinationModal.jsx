@@ -1,7 +1,6 @@
 import { useState } from 'react';
 
 export default function CollectiveVaccinationModal({ isOpen, onClose, onSave, animals }) {
-    console.log("Modal colectiva:", isOpen);
     const [step, setStep] = useState(1);
     const [selectedIds, setSelectedIds] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
@@ -82,7 +81,7 @@ export default function CollectiveVaccinationModal({ isOpen, onClose, onSave, an
                                     <span className="cv-search-icon">🔍</span>
                                     <input
                                         type="text"
-                                        placeholder="Buscar por ID o arete…"
+                                        aria-label="Buscar" placeholder="Buscar por ID o arete…"
                                         value={searchTerm}
                                         onChange={e => setSearchTerm(e.target.value)}
                                     />

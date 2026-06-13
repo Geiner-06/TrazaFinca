@@ -1,18 +1,13 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+
+const EMPTY_FORM = { especie: '', proposito: '', sexo: '', raza: '', arete: '', fecha: '', dueño: '' };
 
 export default function AnimalFormModal({ isOpen, onClose, onSave, animalToEdit }) {
-    const [form, setForm] = useState({ especie: '', proposito: '', sexo: '', raza: '', arete: '', fecha: '', dueño: '' });
+    // Init perezoso desde props (sin setState en useEffect): los inputs nacen
+    // controlados, evitando el warning "uncontrolled to controlled". El padre
+    // remonta el modal con `key` para reiniciar el estado en cada apertura.
+    const [form, setForm] = useState(() => (animalToEdit ? { ...EMPTY_FORM, ...animalToEdit } : EMPTY_FORM));
     const [error, setError] = useState(false);
-
-    // Efecto para precargar datos si estamos editando (HU-05)
-    useEffect(() => {
-        if (animalToEdit) {
-            setForm(animalToEdit);
-        } else {
-            setForm({ especie: '', proposito: '', sexo: '', raza: '', arete: '', fecha: '', dueño: '' });
-        }
-    }, [animalToEdit, isOpen]);
 
     if (!isOpen) return null;
 
@@ -31,7 +26,7 @@ export default function AnimalFormModal({ isOpen, onClose, onSave, animalToEdit 
             <div className="modal-card">
                 <div className="modal-header">
                     <h2>{animalToEdit ? `Editar Animal: ${animalToEdit.id}` : 'Registrar Nuevo Animal'}</h2>
-                    <button className="btn-close" onClick={onClose}>&times;</button>
+                    <button type="button" aria-label="Cerrar" className="btn-close" onClick={onClose}>&times;</button>
                 </div>
                 <form onSubmit={handleSubmit}>
                     {error && <div className="form-alert">* Completa los campos obligatorios</div>}
@@ -66,19 +61,19 @@ export default function AnimalFormModal({ isOpen, onClose, onSave, animalToEdit 
                         </div>
                         <div className="form-group">
                             <label>Raza</label>
-                            <input type="text" value={form.raza} onChange={e => setForm({ ...form, raza: e.target.value })} />
+                            <input type="text" value={form.raza ?? ''} onChange={e => setForm({ ...form, raza: e.target.value })} />
                         </div>
                         <div className="form-group">
                             <label>Código Arete (Opcional)</label>
-                            <input type="text" value={form.arete} onChange={e => setForm({ ...form, arete: e.target.value })} />
+                            <input type="text" value={form.arete ?? ''} onChange={e => setForm({ ...form, arete: e.target.value })} />
                         </div>
                         <div className="form-group">
                             <label>Fecha Ingreso</label>
-                            <input type="date" value={form.fecha} onChange={e => setForm({ ...form, fecha: e.target.value })} />
+                            <input type="date" value={form.fecha ?? ''} onChange={e => setForm({ ...form, fecha: e.target.value })} />
                         </div>
                         <div className="form-group full-width">
                             <label>Finca / Dueño</label>
-                            <input type="text" value={form.dueño} onChange={e => setForm({ ...form, dueño: e.target.value })} />
+                            <input type="text" value={form.dueño ?? ''} onChange={e => setForm({ ...form, dueño: e.target.value })} />
                         </div>
                     </div>
                     <div className="form-actions">
