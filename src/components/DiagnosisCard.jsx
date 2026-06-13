@@ -13,16 +13,16 @@ export default function DiagnosisCard({ diagnosis, animal }) {
             <div className="record-header">
                 {/* Etiqueta de estado del caso (HU-10) */}
                 <span className={`status-pill ${diagnosis.estado === 'activo' ? 'baja' : 'active'}`}>
-                    {diagnosis.estado === 'activo' ? '🔴 Caso Activo' : '🟢 Resuelto'}
+                    {diagnosis.estado === 'activo' ? '● Caso activo' : '● Resuelto'}
                 </span>
-                <span className="record-date">📅 {formatDate(diagnosis.fecha)}</span>
+                <span className="record-date">{formatDate(diagnosis.fecha)}</span>
             </div>
 
             <div className="record-body">
                 <div className="record-animal-info">
                     <h4>
                         Animal: <span className="animal-link">{diagnosis.animalId}</span>
-                        {animal && animal.arete && <span className="record-arete-tag">🏷️ Arete: {animal.arete}</span>}
+                        {animal && animal.arete && <span className="record-arete-tag">Arete: {animal.arete}</span>}
                     </h4>
                     {/* Título de la enfermedad */}
                     <h3 className="diagnosis-name-display">{diagnosis.diagnostico}</h3>
@@ -31,7 +31,7 @@ export default function DiagnosisCard({ diagnosis, animal }) {
                 {/* Advertencia SENASA si es notificable */}
                 {diagnosis.esNotificable && (
                     <div className="senasa-notification-box" style={{ margin: '10px 0', padding: '10px' }}>
-                        <strong>⚠️ NOTIFICACIÓN OBLIGATORIA</strong>
+                        <strong>NOTIFICACIÓN OBLIGATORIA</strong>
                         <p style={{ fontSize: '0.75rem', margin: 0 }}>Este caso requiere reporte inmediato a las autoridades.</p>
                     </div>
                 )}

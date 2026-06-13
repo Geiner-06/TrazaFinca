@@ -1,28 +1,12 @@
 import { useState } from 'react';
+import { CATEGORY_LABELS } from '../data/weightCategories.js';
 
-export default function HealthRecordCard({ record, animal, onAddNote }) {
+// Umbral de referencia (kg/día) bajo el cual se marca rendimiento bajo
+const LOW_GDP_THRESHOLD = 0.3;
+
+export default function WeightRecordCard({ record, animal, onAddNote }) {
     const [noteText, setNoteText] = useState('');
     const [showNoteForm, setShowNoteForm] = useState(false);
-
-    const getTreatmentBadgeClass = (type) => {
-        switch (type) {
-            case 'vacuna': return 'badge-vacuna';
-            case 'desparasitacion_interna': return 'badge-desparasitacion-int';
-            case 'desparasitacion_externa': return 'badge-desparasitacion-ext';
-            case 'vitamina_mineral': return 'badge-vitamina';
-            default: return 'badge-default';
-        }
-    };
-
-    const getTreatmentLabel = (type) => {
-        switch (type) {
-            case 'vacuna': return 'Vacuna';
-            case 'desparasitacion_interna': return 'Desparasitación Interna';
-            case 'desparasitacion_externa': return 'Desparasitación Externa';
-            case 'vitamina_mineral': return 'Vitamina / Mineral';
-            default: return type;
-        }
-    };
 
     const formatDate = (dateStr) => {
         if (!dateStr) return '';
@@ -38,13 +22,29 @@ export default function HealthRecordCard({ record, animal, onAddNote }) {
         setShowNoteForm(false);
     };
 
+    const getGdpInfo = () => {
+        if (record.gdp === null || record.gdp === undefined) {
+            return { className: 'gdp-first', text: 'Primer pesaje registrado', icon: '–' };
+        }
+        const formatted = `${record.gdp > 0 ? '+' : ''}${record.gdp.toFixed(3)} kg/día`;
+        if (record.gdp < 0) {
+            return { className: 'gdp-negative', text: `${formatted} — Pérdida de peso`, icon: '↓' };
+        }
+        if (record.gdp < LOW_GDP_THRESHOLD) {
+            return { className: 'gdp-low', text: `${formatted} — Bajo rendimiento`, icon: '!' };
+        }
+        return { className: 'gdp-good', text: formatted, icon: '↑' };
+    };
+
+    const gdpInfo = getGdpInfo();
+
     return (
         <div className="health-record-card">
             <div className="record-header">
-                <span className={`treatment-badge ${getTreatmentBadgeClass(record.tipoTratamiento)}`}>
-                    {getTreatmentLabel(record.tipoTratamiento)}
+                <span className="treatment-badge badge-pesaje">
+                    Pesaje · {CATEGORY_LABELS[record.categoria] || record.categoria}
                 </span>
-                <span className="record-date">{formatDate(record.fechaAplicacion)}</span>
+                <span className="record-date">{formatDate(record.fecha)}</span>
             </div>
 
             <div className="record-body">
@@ -62,38 +62,49 @@ export default function HealthRecordCard({ record, animal, onAddNote }) {
 
                 <div className="record-details-grid">
                     <div className="record-detail-item">
-                        <span className="label">Producto</span>
-                        <span className="value">{record.productoComercial}</span>
+                        <span className="label">Peso Registrado</span>
+                        <span className="value weight-value">{record.pesoKg} kg</span>
                     </div>
                     <div className="record-detail-item">
-                        <span className="label">Lote</span>
-                        <span className="value code-font">{record.lote}</span>
-                    </div>
-                    <div className="record-detail-item">
-                        <span className="label">Dosis</span>
-                        <span className="value">{record.dosis}</span>
-                    </div>
-                    <div className="record-detail-item">
-                        <span className="label">Vía</span>
-                        <span className="value">{record.viaAdministracion}</span>
-                    </div>
-                    <div className="record-detail-item full-width">
-                        <span className="label">Veterinario Responsable</span>
-                        <span className="value">{record.veterinario}</span>
-                    </div>
-                </div>
-
-                {record.fechaProxima && (
-                    <div className="next-dose-banner">
-                        <span className="icon">→</span>
-                        <span>
-                            Próxima dosis recomendada: <strong>{formatDate(record.fechaProxima)}</strong>
-                            {record.periodoRevacunacion && ` (cada ${record.periodoRevacunacion} días)`}
+                        <span className="label">Condición Corporal</span>
+                        <span className="value">
+                            {record.condicionCorporal ? (
+                                <>
+                                    {record.condicionCorporal} / 5
+                                    <span className="cc-dots">
+                                        {' '}{'●'.repeat(record.condicionCorporal)}{'○'.repeat(5 - record.condicionCorporal)}
+                                    </span>
+                                </>
+                            ) : (
+                                <span className="muted-inline">No registrada</span>
+                            )}
                         </span>
                     </div>
-                )}
+                    {record.pesoAnterior !== null && record.pesoAnterior !== undefined && (
+                        <div className="record-detail-item full-width">
+                            <span className="label">Pesaje Anterior</span>
+                            <span className="value">
+                                {record.pesoAnterior} kg el {formatDate(record.fechaPesajeAnterior)}
+                            </span>
+                        </div>
+                    )}
+                    {record.observaciones && (
+                        <div className="record-detail-item full-width">
+                            <span className="label">Observaciones</span>
+                            <span className="value">{record.observaciones}</span>
+                        </div>
+                    )}
+                </div>
 
-                {/* Clarification Notes Section */}
+                {/* Ganancia Diaria de Peso (GDP) */}
+                <div className={`gdp-banner ${gdpInfo.className}`}>
+                    <span className="icon">{gdpInfo.icon}</span>
+                    <span>
+                        Ganancia Diaria de Peso (GDP): <strong>{gdpInfo.text}</strong>
+                    </span>
+                </div>
+
+                {/* Notas Aclaratorias (el registro es inalterable) */}
                 <div className="record-notes-section">
                     <h5>Notas Aclaratorias ({record.notas ? record.notas.length : 0})</h5>
                     {record.notas && record.notas.length > 0 ? (
@@ -106,7 +117,7 @@ export default function HealthRecordCard({ record, animal, onAddNote }) {
                             ))}
                         </div>
                     ) : (
-                        <p className="no-notes-text">No hay notas aclaratorias en este registro.</p>
+                        <p className="no-notes-text">No hay notas aclaratorias en este pesaje.</p>
                     )}
 
                     {showNoteForm ? (
@@ -114,7 +125,7 @@ export default function HealthRecordCard({ record, animal, onAddNote }) {
                             <textarea
                                 required
                                 rows="2"
-                                placeholder="Escriba una nota aclaratoria sobre este tratamiento..."
+                                placeholder="Escriba una nota aclaratoria sobre este pesaje..."
                                 value={noteText}
                                 onChange={e => setNoteText(e.target.value)}
                             />
@@ -136,7 +147,7 @@ export default function HealthRecordCard({ record, animal, onAddNote }) {
             </div>
 
             <div className="record-footer">
-                <span className="confirmed-pill">Registro confirmado (SENASA)</span>
+                <span className="confirmed-pill">Registro inalterable</span>
                 <span className="record-id-tag">{record.id}</span>
             </div>
         </div>

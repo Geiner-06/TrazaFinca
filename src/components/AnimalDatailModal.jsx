@@ -2,6 +2,8 @@ import { useState } from 'react';
 import "../App.css"
 import { SEED_DIAGNOSES } from '../data/seed';
 import DiagnosisCard from './DiagnosisCard';
+import { FEED_PURPOSES, formatFeedDate } from '../data/feedConstants.js';
+import { projectTargetDate } from '../data/growthProjection.js';
 
 export default function AnimalDetailModal({
     animal,
@@ -11,7 +13,13 @@ export default function AnimalDetailModal({
     healthRecords = [],
     onAddHealthRecord,
     onAddNoteToRecord,
-    diagnoses = SEED_DIAGNOSES
+    diagnoses = SEED_DIAGNOSES,
+    feedPlans = [],
+    feedAssignments = [],
+    onAssignFeedPlan,
+    animalWeightRecords = [],
+    weightTarget = null,
+    onSetWeightTarget
 }) {
     const [activeNoteRecordId, setActiveNoteRecordId] = useState(null);
     const [newNoteText, setNewNoteText] = useState('');
@@ -22,7 +30,6 @@ export default function AnimalDetailModal({
     if (!animal) return null;
 
     const specClass = `species-${animal.especie.replace(/\s+/g, '.')}`;
-    const activeDiagnoses = diagnoses.filter(d => d.animalId === animal.id && d.estado === 'activo');
     // 1. Filtrar y ordenar historial (Cronológico Descendente - HU-09 Criterio 1)
     const animalRecords = healthRecords
         .filter(r => r.animalId === animal.id)
@@ -52,6 +59,16 @@ export default function AnimalDetailModal({
     };
 
     const withdrawal = getWithdrawalStatus();
+
+    // Plan de alimentación: activo + historial archivado (Milestone 3, criterio 5)
+    const activeAssignment = feedAssignments.find(as => as.estado === 'activo');
+    const activePlan = activeAssignment ? feedPlans.find(p => p.id === activeAssignment.planId) : null;
+    const archivedAssignments = feedAssignments
+        .filter(as => as.estado === 'archivado')
+        .sort((a, b) => new Date(b.fechaInicio) - new Date(a.fechaInicio));
+
+    // Proyección de peso objetivo (Milestone 3, criterios 3 y 4)
+    const projection = projectTargetDate(animalWeightRecords, weightTarget ? weightTarget.value : null);
 
     const formatDate = (dateString) => {
         if (!dateString) return "No registrada";
@@ -112,7 +129,7 @@ export default function AnimalDetailModal({
                     {withdrawal && (
                         <div className="withdrawal-banner">
                             <div className="withdrawal-banner-header">
-                                <span>⚠ Restricción sanitaria activa </span>
+                                <span>Restricción sanitaria activa </span>
                                 <span className="badge-bloqueado">BLOQUEADO</span>
                             </div>
                             <div className="withdrawal-banner-body">
@@ -164,6 +181,126 @@ export default function AnimalDetailModal({
                         </div>
                     </div>
 
+                    {/* Plan de Alimentación (Milestone 3) */}
+                    <div className="detail-health-section" style={{ marginTop: '30px' }}>
+                        <div className="detail-health-header">
+                            <h3>Plan de Alimentación</h3>
+                            {animal.estado === 'activo' && onAssignFeedPlan && (
+                                <button
+                                    className="btn btn-primary btn-sm"
+                                    onClick={() => onAssignFeedPlan(animal.id)}
+                                >
+                                    {activePlan ? 'Cambiar Plan' : '+ Asignar Plan'}
+                                </button>
+                            )}
+                        </div>
+
+                        {activePlan ? (
+                            <div className="active-feed-plan">
+                                <div className="active-feed-plan-head">
+                                    <span className={`feed-purpose-badge feed-purpose-${activePlan.proposito}`}>
+                                        {activePlan.nombre}
+                                    </span>
+                                    <span className="feed-active-pill">● Activo</span>
+                                </div>
+                                <div className="active-feed-plan-meta">
+                                    <span><strong>Propósito:</strong> {FEED_PURPOSES[activePlan.proposito] || activePlan.proposito}</span>
+                                    <span><strong>Inicio:</strong> {formatFeedDate(activeAssignment.fechaInicio)}</span>
+                                    <span><strong>Asignado por:</strong> {activeAssignment.responsable}</span>
+                                </div>
+                                <div className="active-feed-nutrition">
+                                    <span>Proteína: <strong>{activePlan.proteina}%</strong></span>
+                                    <span>Energía: <strong>{activePlan.energia} Mcal/kg</strong></span>
+                                    <span>Fibra: <strong>{activePlan.fibra}%</strong></span>
+                                </div>
+                                <p className="active-feed-ration">
+                                    <strong>Ración:</strong> {activePlan.cantidadDiaria} {activePlan.unidad}/día · {activePlan.frecuencia}
+                                </p>
+                                <p className="active-feed-ingredients">
+                                    <strong>Insumos:</strong> {activePlan.ingredientes}
+                                </p>
+
+                                {archivedAssignments.length > 0 && (
+                                    <div className="feed-history">
+                                        <h5>Planes anteriores ({archivedAssignments.length})</h5>
+                                        {archivedAssignments.map(as => {
+                                            const plan = feedPlans.find(p => p.id === as.planId);
+                                            return (
+                                                <div key={as.id} className="feed-history-item">
+                                                    <span>{plan ? plan.nombre : 'Plan eliminado'}</span>
+                                                    <span className="feed-history-dates">
+                                                        {formatFeedDate(as.fechaInicio)} → {formatFeedDate(as.fechaCierre)}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <p className="no-records-placeholder">Este animal no tiene un plan de alimentación asignado.</p>
+                        )}
+                    </div>
+
+                    {/* Proyección de Peso Objetivo (Milestone 3) */}
+                    <div className="detail-health-section" style={{ marginTop: '30px' }}>
+                        <div className="detail-health-header">
+                            <h3>Proyección de Peso Objetivo</h3>
+                            {animal.estado === 'activo' && onSetWeightTarget && (
+                                <button className="btn btn-primary btn-sm" onClick={() => onSetWeightTarget(animal.id)}>
+                                    {weightTarget ? 'Editar Objetivo' : '+ Definir Objetivo'}
+                                </button>
+                            )}
+                        </div>
+
+                        {projection.status === 'sin_datos' ? (
+                            <p className="no-records-placeholder">Este animal no tiene pesajes registrados.</p>
+                        ) : projection.status === 'sin_objetivo' ? (
+                            <p className="no-records-placeholder">
+                                Defina un peso objetivo para calcular la fecha estimada de alcance.
+                                {' '}Peso actual: <strong>{projection.currentWeight} kg</strong>.
+                            </p>
+                        ) : projection.status === 'pocos_pesajes' ? (
+                            <p className="no-records-placeholder">
+                                Se requieren al menos 2 pesajes para proyectar. Peso actual: <strong>{projection.currentWeight} kg</strong>,
+                                objetivo: <strong>{weightTarget.value} kg</strong>.
+                            </p>
+                        ) : projection.status === 'no_calculable' ? (
+                            <div className="projection-box no-calculable">
+                                <div className="projection-grid">
+                                    <div><span className="pj-label">Peso actual</span><span className="pj-value">{projection.currentWeight} kg</span></div>
+                                    <div><span className="pj-label">Peso objetivo</span><span className="pj-value">{projection.target} kg</span></div>
+                                    <div><span className="pj-label">GDP promedio</span><span className="pj-value below">{projection.avgGdp} kg/d</span></div>
+                                </div>
+                                <p className="projection-warning">
+                                    Proyección no calculable: la GDP promedio de los últimos {projection.nPesajes} pesajes es cero o negativa.
+                                    Se recomienda <strong>revisar el plan de alimentación</strong> del animal.
+                                </p>
+                            </div>
+                        ) : projection.status === 'alcanzado' ? (
+                            <div className="projection-box reached">
+                                <div className="projection-grid">
+                                    <div><span className="pj-label">Peso actual</span><span className="pj-value">{projection.currentWeight} kg</span></div>
+                                    <div><span className="pj-label">Peso objetivo</span><span className="pj-value">{projection.target} kg</span></div>
+                                    <div><span className="pj-label">GDP promedio</span><span className="pj-value">{projection.avgGdp} kg/d</span></div>
+                                </div>
+                                <p className="projection-reached-msg">✓ El animal ya alcanzó o superó su peso objetivo.</p>
+                            </div>
+                        ) : (
+                            <div className="projection-box ok">
+                                <div className="projection-grid">
+                                    <div><span className="pj-label">Peso actual</span><span className="pj-value">{projection.currentWeight} kg</span></div>
+                                    <div><span className="pj-label">Peso objetivo</span><span className="pj-value">{projection.target} kg</span></div>
+                                    <div><span className="pj-label">GDP promedio ({projection.nPesajes} pesajes)</span><span className="pj-value">{projection.avgGdp} kg/d</span></div>
+                                    <div><span className="pj-label">Fecha estimada de alcance</span><span className="pj-value highlight">{formatFeedDate(projection.estimatedDate)}</span></div>
+                                </div>
+                                <p className="projection-note">
+                                    Faltan ~{projection.daysToTarget} días{weightTarget.scope === 'lote' && ' · objetivo definido a nivel de lote'}.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
                     {/* Historial Sanitario (HU-09) */}
                     <div className="detail-health-section">
                         <div className="detail-health-header">
@@ -186,7 +323,7 @@ export default function AnimalDetailModal({
                                             <span className={`treatment-badge badge-sm ${getTreatmentBadgeClass(record.tipoTratamiento)}`}>
                                                 {getTreatmentLabel(record.tipoTratamiento)}
                                             </span>
-                                            <span className="detail-record-date">📅 Aplicación: {formatDate(record.fechaAplicacion)}</span>
+                                            <span className="detail-record-date">Aplicación: {formatDate(record.fechaAplicacion)}</span>
                                         </div>
                                         <div className="detail-record-row-details">
                                             <p><strong>Producto:</strong> {record.productoComercial} (Lote: {record.lote})</p>
@@ -195,12 +332,12 @@ export default function AnimalDetailModal({
 
                                             {record.periodoRetiro && (
                                                 <p className={`retiro-info-text ${withdrawal && withdrawal.product === record.productoComercial ? 'active-retiro' : ''}`}>
-                                                    🕒 Período de Retiro: <strong>{record.periodoRetiro} días</strong>
+                                                    Período de retiro: <strong>{record.periodoRetiro} días</strong>
                                                 </p>
                                             )}
 
                                             {record.fechaProxima && (
-                                                <p className="next-date-hint">⏳ Próxima Dosis: <strong>{formatDate(record.fechaProxima)}</strong></p>
+                                                <p className="next-date-hint">Próxima dosis: <strong>{formatDate(record.fechaProxima)}</strong></p>
                                             )}
                                         </div>
 
@@ -236,7 +373,7 @@ export default function AnimalDetailModal({
                                                         setNewNoteText('');
                                                     }}
                                                 >
-                                                    📝 Agregar Nota Aclaratoria
+                                                    Agregar nota aclaratoria
                                                 </button>
                                             )}
                                         </div>

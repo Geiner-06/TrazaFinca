@@ -4,6 +4,10 @@ export default function AnimalCard({ animal, onClick }) {
     return (
         <div className={`animal-card ${animal.estado === 'baja' ? 'baja' : ''}`}
             onClick={onClick}
+            role="button"
+            tabIndex={0}
+            aria-label={`Ver ficha de ${animal.id}${animal.arete ? `, arete ${animal.arete}` : ''}`}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
             style={{ cursor: "pointer" }}>
             <div className="card-badge-row">
                 <span className={`species-badge ${specClass}`}>{animal.especie}</span>
@@ -12,7 +16,7 @@ export default function AnimalCard({ animal, onClick }) {
                 </span>
             </div>
             <h2 className="card-id">
-                {animal.id} {animal.arete && <span className="card-tag">🏷️ {animal.arete}</span>}
+                {animal.id} {animal.arete && <span className="card-tag">{animal.arete}</span>}
             </h2>
             <div className="card-details">
                 <div className="card-detail-item">
@@ -26,7 +30,7 @@ export default function AnimalCard({ animal, onClick }) {
             </div>
             <div className="card-footer">
                 <span className="card-purpose">{animal.proposito}</span>
-                <button className="btn-view-profile">Ver Ficha</button>
+                <span className="btn-view-profile" aria-hidden="true">Ver Ficha</span>
             </div>
         </div>
     );

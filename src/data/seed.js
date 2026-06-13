@@ -9,6 +9,8 @@ export const SEED_ANIMALS = [
         fecha: "2023-04-10",
         arete: "EX-001",
         dueño: "Finca La Esperanza / Roberto Solís",
+        lote: "Lote Trabajo",
+        potrero: "Potrero Norte",
         estado: "activo"
     },
     {
@@ -20,6 +22,8 @@ export const SEED_ANIMALS = [
         fecha: "2022-11-15",
         arete: "VL-204",
         dueño: "Finca San José / Elena Gómez",
+        lote: "Lote Lechero",
+        potrero: "Potrero Sur",
         estado: "activo"
     },
     {
@@ -31,6 +35,8 @@ export const SEED_ANIMALS = [
         fecha: "2021-08-05",
         arete: "CH-901",
         dueño: "Finca La Esperanza / Roberto Solís",
+        lote: "Lote Trabajo",
+        potrero: "Potrero Norte",
         estado: "activo"
     },
     {
@@ -42,6 +48,8 @@ export const SEED_ANIMALS = [
         fecha: "2024-01-20",
         arete: "CG-055",
         dueño: "Rancho Alto / Carlos Mejía",
+        lote: "Lote Lechero",
+        potrero: "Potrero Este",
         estado: "activo"
     },
     {
@@ -53,6 +61,8 @@ export const SEED_ANIMALS = [
         fecha: "2023-09-12",
         arete: "GE-112",
         dueño: "Finca El Toro / Marcos Alvarado",
+        lote: "Lote Engorde",
+        potrero: "Potrero Sur",
         estado: "baja",
         bajaMotivo: "Sacrificado",
         bajaComentarios: "Carne destinada al consumo local de la hacienda.",
@@ -67,6 +77,34 @@ export const SEED_ANIMALS = [
         fecha: "2020-05-18",
         arete: "BA-441",
         dueño: "Finca San José / Elena Gómez",
+        lote: "Lote Trabajo",
+        potrero: "Potrero Oeste",
+        estado: "activo"
+    },
+    {
+        id: "AN-007",
+        especie: "ganado de engorde",
+        proposito: "carne",
+        raza: "Brahman",
+        sexo: "Macho",
+        fecha: "2025-09-01",
+        arete: "GE-201",
+        dueño: "Finca El Toro / Marcos Alvarado",
+        lote: "Lote Engorde",
+        potrero: "Potrero Sur",
+        estado: "activo"
+    },
+    {
+        id: "AN-008",
+        especie: "ganado de engorde",
+        proposito: "carne",
+        raza: "Nelore",
+        sexo: "Macho",
+        fecha: "2025-10-01",
+        arete: "GE-202",
+        dueño: "Finca El Toro / Marcos Alvarado",
+        lote: "Lote Engorde",
+        potrero: "Potrero Sur",
         estado: "activo"
     }
 ];
@@ -179,6 +217,343 @@ export const SEED_DIAGNOSES = [
         diagnostico: "Fiebre Aftosa",
         esNotificable: true,
         tratamiento: "Aislamiento total y desinfección.",
+        estado: "activo"
+    }
+];
+
+export const SEED_WEIGHT_RECORDS = [
+    {
+        id: "PES-001",
+        animalId: "AN-001",
+        categoria: "toro",
+        fecha: "2026-03-01",
+        pesoKg: 620,
+        condicionCorporal: 3,
+        observaciones: "Pesaje de rutina trimestral.",
+        gdp: null,
+        pesoAnterior: null,
+        fechaPesajeAnterior: null,
+        notas: [],
+        estado: "confirmado"
+    },
+    {
+        id: "PES-002",
+        animalId: "AN-001",
+        categoria: "toro",
+        fecha: "2026-04-15",
+        pesoKg: 638,
+        condicionCorporal: 3,
+        observaciones: "",
+        gdp: 0.4,
+        pesoAnterior: 620,
+        fechaPesajeAnterior: "2026-03-01",
+        notas: [],
+        estado: "confirmado"
+    },
+    {
+        id: "PES-003",
+        animalId: "AN-001",
+        categoria: "toro",
+        fecha: "2026-06-01",
+        pesoKg: 652,
+        condicionCorporal: 4,
+        observaciones: "Buena condición general tras cambio de potrero.",
+        gdp: 0.298,
+        pesoAnterior: 638,
+        fechaPesajeAnterior: "2026-04-15",
+        notas: [
+            {
+                id: 1,
+                texto: "La báscula fue calibrada el día anterior al pesaje.",
+                fecha: "2026-06-01"
+            }
+        ],
+        estado: "confirmado"
+    },
+    {
+        id: "PES-004",
+        animalId: "AN-002",
+        categoria: "vaca",
+        fecha: "2026-03-10",
+        pesoKg: 540,
+        condicionCorporal: 3,
+        observaciones: "Primer pesaje del año.",
+        gdp: null,
+        pesoAnterior: null,
+        fechaPesajeAnterior: null,
+        notas: [],
+        estado: "confirmado"
+    },
+    {
+        id: "PES-005",
+        animalId: "AN-002",
+        categoria: "vaca",
+        fecha: "2026-05-09",
+        pesoKg: 549,
+        condicionCorporal: 2,
+        observaciones: "Ganancia menor a la esperada. Revisar plan de alimentación.",
+        gdp: 0.15,
+        pesoAnterior: 540,
+        fechaPesajeAnterior: "2026-03-10",
+        notas: [],
+        estado: "confirmado"
+    },
+    {
+        id: "PES-006",
+        animalId: "AN-005",
+        categoria: "novillo",
+        fecha: "2025-07-01",
+        pesoKg: 380,
+        condicionCorporal: 3,
+        observaciones: "Ingreso a etapa de engorde.",
+        gdp: null,
+        pesoAnterior: null,
+        fechaPesajeAnterior: null,
+        notas: [],
+        estado: "confirmado"
+    },
+    {
+        id: "PES-007",
+        animalId: "AN-005",
+        categoria: "novillo",
+        fecha: "2025-09-01",
+        pesoKg: 470,
+        condicionCorporal: 4,
+        observaciones: "Excelente respuesta al plan de engorde.",
+        gdp: 1.452,
+        pesoAnterior: 380,
+        fechaPesajeAnterior: "2025-07-01",
+        notas: [],
+        estado: "confirmado"
+    },
+    // Lote Engorde - AN-007 (buen rendimiento)
+    {
+        id: "PES-008", animalId: "AN-007", categoria: "novillo", fecha: "2026-02-01",
+        pesoKg: 300, condicionCorporal: 3, observaciones: "Ingreso al lote de engorde.",
+        gdp: null, pesoAnterior: null, fechaPesajeAnterior: null, notas: [], estado: "confirmado"
+    },
+    {
+        id: "PES-009", animalId: "AN-007", categoria: "novillo", fecha: "2026-03-01",
+        pesoKg: 330, condicionCorporal: 3, observaciones: "",
+        gdp: 1.071, pesoAnterior: 300, fechaPesajeAnterior: "2026-02-01", notas: [], estado: "confirmado"
+    },
+    {
+        id: "PES-010", animalId: "AN-007", categoria: "novillo", fecha: "2026-04-01",
+        pesoKg: 362, condicionCorporal: 4, observaciones: "",
+        gdp: 1.032, pesoAnterior: 330, fechaPesajeAnterior: "2026-03-01", notas: [], estado: "confirmado"
+    },
+    {
+        id: "PES-011", animalId: "AN-007", categoria: "novillo", fecha: "2026-05-01",
+        pesoKg: 395, condicionCorporal: 4, observaciones: "",
+        gdp: 1.100, pesoAnterior: 362, fechaPesajeAnterior: "2026-04-01", notas: [], estado: "confirmado"
+    },
+    {
+        id: "PES-012", animalId: "AN-007", categoria: "novillo", fecha: "2026-06-01",
+        pesoKg: 428, condicionCorporal: 4, observaciones: "Rendimiento sobresaliente.",
+        gdp: 1.065, pesoAnterior: 395, fechaPesajeAnterior: "2026-05-01", notas: [], estado: "confirmado"
+    },
+    // Lote Engorde - AN-008 (bajo rendimiento)
+    {
+        id: "PES-013", animalId: "AN-008", categoria: "novillo", fecha: "2026-02-01",
+        pesoKg: 310, condicionCorporal: 3, observaciones: "Ingreso al lote de engorde.",
+        gdp: null, pesoAnterior: null, fechaPesajeAnterior: null, notas: [], estado: "confirmado"
+    },
+    {
+        id: "PES-014", animalId: "AN-008", categoria: "novillo", fecha: "2026-03-01",
+        pesoKg: 325, condicionCorporal: 3, observaciones: "",
+        gdp: 0.536, pesoAnterior: 310, fechaPesajeAnterior: "2026-02-01", notas: [], estado: "confirmado"
+    },
+    {
+        id: "PES-015", animalId: "AN-008", categoria: "novillo", fecha: "2026-04-01",
+        pesoKg: 338, condicionCorporal: 2, observaciones: "Ganancia menor a la esperada.",
+        gdp: 0.419, pesoAnterior: 325, fechaPesajeAnterior: "2026-03-01", notas: [], estado: "confirmado"
+    },
+    {
+        id: "PES-016", animalId: "AN-008", categoria: "novillo", fecha: "2026-05-01",
+        pesoKg: 350, condicionCorporal: 2, observaciones: "Revisar plan de alimentación.",
+        gdp: 0.400, pesoAnterior: 338, fechaPesajeAnterior: "2026-04-01", notas: [], estado: "confirmado"
+    },
+    {
+        id: "PES-017", animalId: "AN-008", categoria: "novillo", fecha: "2026-06-01",
+        pesoKg: 360, condicionCorporal: 2, observaciones: "Rendimiento por debajo del umbral.",
+        gdp: 0.323, pesoAnterior: 350, fechaPesajeAnterior: "2026-05-01", notas: [], estado: "confirmado"
+    }
+];
+
+// Sesiones de pesaje masivo (Milestone 3). Permiten comparar contra la sesión anterior del lote.
+export const SEED_WEIGHT_SESSIONS = [
+    {
+        id: "SES-001",
+        scope: "lote",
+        scopeValue: "Lote Engorde",
+        fecha: "2026-06-01",
+        weighedIds: ["AN-007", "AN-008"],
+        pendingIds: [],
+        count: 2,
+        avgWeight: 394,
+        prevAvg: null,
+        prevFecha: null
+    }
+];
+
+// --- PLANES DE ALIMENTACIÓN (Milestone 3) ---
+// Planes base del sistema (esBase: true) por propósito productivo + un personalizado de ejemplo.
+export const SEED_FEED_PLANS = [
+    {
+        id: "PA-001",
+        nombre: "Mantenimiento Animales de Trabajo",
+        proposito: "trabajo",
+        proteina: 10,
+        energia: 2.2,
+        fibra: 28,
+        ingredientes: "Pasto estrella, heno de calidad, sales minerales",
+        cantidadDiaria: 10,
+        unidad: "kg",
+        frecuencia: "2 veces al día (mañana y tarde)",
+        composicion: [
+            { feedItemId: "FI-003", kgPorDia: 6 },
+            { feedItemId: "FI-004", kgPorDia: 3.5 },
+            { feedItemId: "FI-005", kgPorDia: 0.5 }
+        ],
+        esBase: true
+    },
+    {
+        id: "PA-002",
+        nombre: "Lactancia Alta Producción",
+        proposito: "produccion",
+        proteina: 18,
+        energia: 2.7,
+        fibra: 17,
+        ingredientes: "Concentrado lechero, ensilaje de maíz, pasto de corte, melaza",
+        cantidadDiaria: 14,
+        unidad: "kg",
+        frecuencia: "3 veces al día",
+        composicion: [
+            { feedItemId: "FI-001", kgPorDia: 5 },
+            { feedItemId: "FI-003", kgPorDia: 6 },
+            { feedItemId: "FI-006", kgPorDia: 2 },
+            { feedItemId: "FI-005", kgPorDia: 1 }
+        ],
+        esBase: true
+    },
+    {
+        id: "PA-003",
+        nombre: "Engorde Intensivo",
+        proposito: "engorde",
+        proteina: 13,
+        energia: 2.9,
+        fibra: 15,
+        ingredientes: "Maíz molido, afrecho de trigo, melaza, pasto, sales minerales",
+        cantidadDiaria: 12,
+        unidad: "kg",
+        frecuencia: "2 veces al día",
+        composicion: [
+            { feedItemId: "FI-002", kgPorDia: 5 },
+            { feedItemId: "FI-003", kgPorDia: 4 },
+            { feedItemId: "FI-006", kgPorDia: 2 },
+            { feedItemId: "FI-005", kgPorDia: 1 }
+        ],
+        esBase: true
+    },
+    {
+        id: "PA-004",
+        nombre: "Cabras Lecheras - Pastoreo Suplementado",
+        proposito: "produccion",
+        proteina: 16,
+        energia: 2.5,
+        fibra: 20,
+        ingredientes: "Forraje verde, concentrado caprino, heno de leguminosas",
+        cantidadDiaria: 4,
+        unidad: "kg",
+        frecuencia: "2 veces al día",
+        composicion: [
+            { feedItemId: "FI-003", kgPorDia: 2.5 },
+            { feedItemId: "FI-001", kgPorDia: 1 },
+            { feedItemId: "FI-004", kgPorDia: 0.5 }
+        ],
+        esBase: false
+    }
+];
+
+// Insumos de alimentación en inventario (Milestone 3)
+export const SEED_FEED_ITEMS = [
+    { id: "FI-001", nombre: "Concentrado Lechero", tipo: "concentrado", cantidad: 80, unidad: "kg", fechaIngreso: "2026-06-01", proveedor: "AgroNorte S.A.", costoUnitario: 320 },
+    { id: "FI-002", nombre: "Maíz Molido", tipo: "concentrado", cantidad: 50, unidad: "kg", fechaIngreso: "2026-06-05", proveedor: "Distribuidora El Campo", costoUnitario: 280 },
+    { id: "FI-003", nombre: "Pasto de Corte", tipo: "forraje", cantidad: 100, unidad: "kg", fechaIngreso: "2026-06-08", proveedor: "Finca propia", costoUnitario: 25 },
+    { id: "FI-004", nombre: "Heno", tipo: "forraje", cantidad: 120, unidad: "kg", fechaIngreso: "2026-05-20", proveedor: "AgroNorte S.A.", costoUnitario: 90 },
+    { id: "FI-005", nombre: "Sales Minerales", tipo: "suplemento_mineral", cantidad: 40, unidad: "kg", fechaIngreso: "2026-05-15", proveedor: "Veterinaria San Carlos", costoUnitario: 600 },
+    { id: "FI-006", nombre: "Melaza", tipo: "concentrado", cantidad: 30, unidad: "kg", fechaIngreso: "2026-06-02", proveedor: "Ingenio Dulce", costoUnitario: 180 },
+    { id: "FI-007", nombre: "Sal Común", tipo: "sal", cantidad: 25, unidad: "kg", fechaIngreso: "2026-05-10", proveedor: "Distribuidora El Campo", costoUnitario: 150 }
+];
+
+// Ledger de entradas de stock de insumos (control de gasto, criterio 4)
+export const SEED_FEED_STOCK_ENTRIES = [
+    { id: "FE-001", feedItemId: "FI-004", cantidad: 120, proveedor: "AgroNorte S.A.", costoUnitario: 90, costoTotal: 10800, fecha: "2026-05-20" }
+];
+
+// Asignaciones de planes a animales. Solo una activa por animal a la vez.
+export const SEED_FEED_ASSIGNMENTS = [
+    {
+        id: "AS-001",
+        animalId: "AN-001",
+        planId: "PA-001",
+        fechaInicio: "2026-02-01",
+        fechaCierre: null,
+        responsable: "Roberto Solís",
+        estado: "activo"
+    },
+    {
+        id: "AS-002",
+        animalId: "AN-002",
+        planId: "PA-002",
+        fechaInicio: "2026-03-15",
+        fechaCierre: null,
+        responsable: "Elena Gómez",
+        estado: "activo"
+    },
+    {
+        id: "AS-003",
+        animalId: "AN-005",
+        planId: "PA-001",
+        fechaInicio: "2025-06-01",
+        fechaCierre: "2025-07-01",
+        responsable: "Marcos Alvarado",
+        estado: "archivado"
+    },
+    {
+        id: "AS-004",
+        animalId: "AN-005",
+        planId: "PA-003",
+        fechaInicio: "2025-07-01",
+        fechaCierre: null,
+        responsable: "Marcos Alvarado",
+        estado: "activo"
+    },
+    {
+        id: "AS-005",
+        animalId: "AN-004",
+        planId: "PA-004",
+        fechaInicio: "2026-04-10",
+        fechaCierre: null,
+        responsable: "Carlos Mejía",
+        estado: "activo"
+    },
+    {
+        id: "AS-006",
+        animalId: "AN-007",
+        planId: "PA-003",
+        fechaInicio: "2026-02-01",
+        fechaCierre: null,
+        responsable: "Marcos Alvarado",
+        estado: "activo"
+    },
+    {
+        id: "AS-007",
+        animalId: "AN-008",
+        planId: "PA-003",
+        fechaInicio: "2026-02-01",
+        fechaCierre: null,
+        responsable: "Marcos Alvarado",
         estado: "activo"
     }
 ];

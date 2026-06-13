@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { SEED_ANIMALS, SEED_HEALTH_RECORDS, SEED_DIAGNOSES, SEED_INVENTORY } from './data/seed.js';
+import { SEED_ANIMALS, SEED_HEALTH_RECORDS, SEED_DIAGNOSES, SEED_INVENTORY, SEED_WEIGHT_RECORDS, SEED_FEED_PLANS, SEED_FEED_ASSIGNMENTS, SEED_WEIGHT_SESSIONS, SEED_FEED_ITEMS, SEED_FEED_STOCK_ENTRIES } from './data/seed.js';
 import AnimalCard from './components/AnimalCard.jsx';
 import AnimalFormModal from './components/AnimalFormModal.jsx';
 import AnimalDetailModal from './components/AnimalDatailModal.jsx';
@@ -12,6 +12,25 @@ import DiagnosisCard from './components/DiagnosisCard.jsx';
 import CollectiveVaccinationModal from './components/CollectiveVaccinationModal.jsx';
 import InventoryDashboard from './components/InventoryDashboard.jsx';
 import WithdrawalMonitor from './components/WithdrawalMonitor.jsx';
+import WeightRecordFormModal from './components/WeightRecordFormModal.jsx';
+import WeightRecordCard from './components/WeightRecordCard.jsx';
+import BatchWeightModal from './components/BatchWeightModal.jsx';
+import BatchWeightSummaryModal from './components/BatchWeightSummaryModal.jsx';
+import FeedPlanCard from './components/FeedPlanCard.jsx';
+import FeedPlanFormModal from './components/FeedPlanFormModal.jsx';
+import FeedPlanAssignModal from './components/FeedPlanAssignModal.jsx';
+import GrowthReport from './components/GrowthReport.jsx';
+import FeedCostReport from './components/FeedCostReport.jsx';
+import LowGainAlerts from './components/LowGainAlerts.jsx';
+import LowGainActionModal from './components/LowGainActionModal.jsx';
+import FeedInventoryDashboard from './components/FeedInventoryDashboard.jsx';
+import FeedItemFormModal from './components/FeedItemFormModal.jsx';
+import FeedStockEntryModal from './components/FeedStockEntryModal.jsx';
+import WeightTargetModal from './components/WeightTargetModal.jsx';
+import { FEED_PURPOSES, formatFeedDate } from './data/feedConstants.js';
+import { computeLowGainAlerts } from './data/growthAlerts.js';
+import { computeFeedConsumption } from './data/feedInventory.js';
+import { getEffectiveTarget } from './data/growthProjection.js';
 import './App.css';
 
 function App() {
@@ -64,6 +83,173 @@ function App() {
   useEffect(() => {
     localStorage.setItem("trazafinca_inventory", JSON.stringify(inventory));
   }, [inventory]);
+
+  // HU Pesajes (Milestone 3): Estado de registros de peso
+  const [weightRecords, setWeightRecords] = useState(() => {
+    const saved = localStorage.getItem("trazafinca_weight_records");
+    return saved ? JSON.parse(saved) : SEED_WEIGHT_RECORDS;
+  });
+  const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
+  const [weightSearch, setWeightSearch] = useState("");
+  const [weightAnimalFilter, setWeightAnimalFilter] = useState("todos");
+
+  // Pesaje masivo por lote (sesiones)
+  const [weightSessions, setWeightSessions] = useState(() => {
+    const saved = localStorage.getItem("trazafinca_weight_sessions");
+    return saved ? JSON.parse(saved) : SEED_WEIGHT_SESSIONS;
+  });
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+  const [batchSummary, setBatchSummary] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem("trazafinca_weight_records", JSON.stringify(weightRecords));
+  }, [weightRecords]);
+
+  useEffect(() => {
+    localStorage.setItem("trazafinca_weight_sessions", JSON.stringify(weightSessions));
+  }, [weightSessions]);
+
+  // HU Proyección de peso objetivo (Milestone 3)
+  const [weightTargets, setWeightTargets] = useState(() => {
+    const saved = localStorage.getItem("trazafinca_weight_targets");
+    return saved ? JSON.parse(saved) : { byAnimal: {}, byLote: {} };
+  });
+  const [targetModalCtx, setTargetModalCtx] = useState(null);
+  const [reportView, setReportView] = useState('crecimiento'); // 'crecimiento' | 'costos'
+
+  useEffect(() => {
+    localStorage.setItem("trazafinca_weight_targets", JSON.stringify(weightTargets));
+  }, [weightTargets]);
+
+  const openAnimalTarget = (animalId) => {
+    setTargetModalCtx({
+      mode: 'animal',
+      key: animalId,
+      label: `Animal ${animalId}`,
+      currentValue: weightTargets.byAnimal[animalId] ?? null
+    });
+  };
+
+  const openLoteTarget = (lote) => {
+    setTargetModalCtx({
+      mode: 'lote',
+      key: lote,
+      label: `Lote ${lote}`,
+      currentValue: weightTargets.byLote[lote] ?? null
+    });
+  };
+
+  const handleSaveTarget = (kg) => {
+    if (!targetModalCtx) return;
+    if (targetModalCtx.mode === 'animal') {
+      setWeightTargets(prev => ({ ...prev, byAnimal: { ...prev.byAnimal, [targetModalCtx.key]: kg } }));
+    } else {
+      setWeightTargets(prev => ({ ...prev, byLote: { ...prev.byLote, [targetModalCtx.key]: kg } }));
+    }
+    setTargetModalCtx(null);
+  };
+
+  // HU Alimentación (Milestone 3): Planes de alimentación y asignaciones
+  const [feedPlans, setFeedPlans] = useState(() => {
+    const saved = localStorage.getItem("trazafinca_feed_plans");
+    return saved ? JSON.parse(saved) : SEED_FEED_PLANS;
+  });
+  const [feedAssignments, setFeedAssignments] = useState(() => {
+    const saved = localStorage.getItem("trazafinca_feed_assignments");
+    return saved ? JSON.parse(saved) : SEED_FEED_ASSIGNMENTS;
+  });
+  const [isFeedPlanModalOpen, setIsFeedPlanModalOpen] = useState(false);
+  const [feedPlanToEdit, setFeedPlanToEdit] = useState(null);
+  const [feedPlanIsDuplicate, setFeedPlanIsDuplicate] = useState(false);
+  const [isFeedAssignModalOpen, setIsFeedAssignModalOpen] = useState(false);
+  const [feedAssignAnimalId, setFeedAssignAnimalId] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem("trazafinca_feed_plans", JSON.stringify(feedPlans));
+  }, [feedPlans]);
+
+  useEffect(() => {
+    localStorage.setItem("trazafinca_feed_assignments", JSON.stringify(feedAssignments));
+  }, [feedAssignments]);
+
+  // HU Inventario de insumos (Milestone 3)
+  const [feedItems, setFeedItems] = useState(() => {
+    const saved = localStorage.getItem("trazafinca_feed_items");
+    return saved ? JSON.parse(saved) : SEED_FEED_ITEMS;
+  });
+  const [feedStockEntries, setFeedStockEntries] = useState(() => {
+    const saved = localStorage.getItem("trazafinca_feed_stock_entries");
+    return saved ? JSON.parse(saved) : SEED_FEED_STOCK_ENTRIES;
+  });
+  const [isFeedItemModalOpen, setIsFeedItemModalOpen] = useState(false);
+  const [feedStockEntryTarget, setFeedStockEntryTarget] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem("trazafinca_feed_items", JSON.stringify(feedItems));
+  }, [feedItems]);
+
+  useEffect(() => {
+    localStorage.setItem("trazafinca_feed_stock_entries", JSON.stringify(feedStockEntries));
+  }, [feedStockEntries]);
+
+  // Insumos con consumo diario proyectado y cobertura de stock
+  const feedItemsWithConsumption = computeFeedConsumption(feedItems, feedPlans, feedAssignments, animals);
+
+  const handleSaveFeedItem = (data) => {
+    const numbers = feedItems.map(i => {
+      const m = i.id.match(/^FI-(\d+)$/);
+      return m ? parseInt(m[1], 10) : 0;
+    });
+    const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
+    const newId = `FI-${String(maxNum + 1).padStart(3, '0')}`;
+    setFeedItems([...feedItems, { ...data, id: newId }]);
+    setIsFeedItemModalOpen(false);
+  };
+
+  const handleAddFeedStockEntry = (data) => {
+    const numbers = feedStockEntries.map(e => {
+      const m = e.id.match(/^FE-(\d+)$/);
+      return m ? parseInt(m[1], 10) : 0;
+    });
+    const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
+    const newId = `FE-${String(maxNum + 1).padStart(3, '0')}`;
+
+    // Suma la cantidad al stock del insumo y actualiza el costo unitario registrado
+    setFeedItems(feedItems.map(i =>
+      i.id === data.feedItemId
+        ? { ...i, cantidad: Math.round((i.cantidad + data.cantidad) * 100) / 100, proveedor: data.proveedor, costoUnitario: data.costoUnitario }
+        : i
+    ));
+    setFeedStockEntries([...feedStockEntries, { ...data, id: newId }]);
+    setFeedStockEntryTarget(null);
+  };
+
+  // HU Alertas de bajo rendimiento (Milestone 3): acciones correctivas
+  const [growthActions, setGrowthActions] = useState(() => {
+    const saved = localStorage.getItem("trazafinca_growth_actions");
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [isLowGainActionOpen, setIsLowGainActionOpen] = useState(false);
+  const [lowGainAlertTarget, setLowGainAlertTarget] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem("trazafinca_growth_actions", JSON.stringify(growthActions));
+  }, [growthActions]);
+
+  // Alertas de bajo rendimiento calculadas a partir de pesajes + planes activos
+  const lowGainAlerts = computeLowGainAlerts(animals, weightRecords, feedAssignments, feedPlans);
+
+  const handleRegisterGrowthAction = (data) => {
+    const newId = `ACC-${String(growthActions.length + 1).padStart(3, '0')}`;
+    setGrowthActions([...growthActions, { ...data, id: newId }]);
+    setIsLowGainActionOpen(false);
+    setLowGainAlertTarget(null);
+  };
+
+  const openLowGainAction = (alert) => {
+    setLowGainAlertTarget(alert);
+    setIsLowGainActionOpen(true);
+  };
 
   // TF-16: Generación de ID Único
   const handleSaveAnimal = (newData) => {
@@ -295,13 +481,219 @@ function App() {
 
     // 2. Generar resumen para SENASA (Criterio 3)
     const totalDosis = animalIds.length * parseFloat(commonData.dosis || 0);
-    alert(`✅ Campaña Finalizada con éxito\n` +
+    alert(`Campaña finalizada con éxito\n` +
       `-------------------------------\n` +
       `Tratamiento: ${commonData.tipoTratamiento.toUpperCase()}\n` +
       `Producto: ${commonData.productoComercial}\n` +
       `Animales Tratados: ${animalIds.length}\n` +
       `Total Dosis Estimada: ${totalDosis} ${commonData.dosis.replace(/[0-9.]/g, '')}`);
   };
+
+  // HU Pesajes: Guardar pesaje con cálculo automático de GDP (Ganancia Diaria de Peso)
+  const handleSaveWeightRecord = (data) => {
+    const numbers = weightRecords.map(r => {
+      const match = r.id.match(/^PES-(\d+)$/);
+      return match ? parseInt(match[1], 10) : 0;
+    });
+    const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
+    const newId = `PES-${String(maxNum + 1).padStart(3, '0')}`;
+
+    // Pesaje anterior del mismo animal (el más reciente con fecha <= a la nueva)
+    const previous = weightRecords
+      .filter(r => r.animalId === data.animalId && r.fecha <= data.fecha)
+      .sort((a, b) => a.fecha.localeCompare(b.fecha))
+      .pop();
+
+    let gdp = null;
+    if (previous) {
+      const days = (new Date(data.fecha.replace(/-/g, '/')) - new Date(previous.fecha.replace(/-/g, '/'))) / 86400000;
+      if (days > 0) {
+        gdp = Math.round(((data.pesoKg - previous.pesoKg) / days) * 1000) / 1000;
+      }
+    }
+
+    const newRecord = {
+      ...data,
+      id: newId,
+      gdp,
+      pesoAnterior: previous ? previous.pesoKg : null,
+      fechaPesajeAnterior: previous ? previous.fecha : null,
+      notas: [],
+      estado: 'confirmado'
+    };
+
+    setWeightRecords([...weightRecords, newRecord]);
+    setIsWeightModalOpen(false);
+  };
+
+  // HU Pesaje masivo: crea un registro individual por cada animal pesado en la sesión
+  const handleSaveBatchWeights = (session) => {
+    let counter = weightRecords.reduce((max, r) => {
+      const m = r.id.match(/^PES-(\d+)$/);
+      return m ? Math.max(max, parseInt(m[1], 10)) : max;
+    }, 0);
+
+    const newRecords = session.entries.map(entry => {
+      counter += 1;
+      const newId = `PES-${String(counter).padStart(3, '0')}`;
+
+      const previous = weightRecords
+        .filter(r => r.animalId === entry.animalId && r.fecha <= session.fecha)
+        .sort((a, b) => a.fecha.localeCompare(b.fecha))
+        .pop();
+
+      let gdp = null;
+      if (previous) {
+        const days = (new Date(session.fecha.replace(/-/g, '/')) - new Date(previous.fecha.replace(/-/g, '/'))) / 86400000;
+        if (days > 0) gdp = Math.round(((entry.pesoKg - previous.pesoKg) / days) * 1000) / 1000;
+      }
+
+      return {
+        id: newId,
+        animalId: entry.animalId,
+        categoria: entry.categoria,
+        fecha: session.fecha,
+        pesoKg: entry.pesoKg,
+        condicionCorporal: null,
+        observaciones: `Pesaje masivo (${session.scope}: ${session.scopeValue})`,
+        gdp,
+        pesoAnterior: previous ? previous.pesoKg : null,
+        fechaPesajeAnterior: previous ? previous.fecha : null,
+        notas: [],
+        estado: 'confirmado'
+      };
+    });
+
+    setWeightRecords([...weightRecords, ...newRecords]);
+
+    // Construir la sesión con resumen y comparación contra la anterior del mismo lote
+    const weighedIds = session.entries.map(e => e.animalId);
+    const pendingIds = session.scopeAnimalIds.filter(id => !weighedIds.includes(id));
+    const avgWeight = session.entries.reduce((s, e) => s + e.pesoKg, 0) / session.entries.length;
+
+    const prevSession = weightSessions
+      .filter(s => s.scope === session.scope && s.scopeValue === session.scopeValue)
+      .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id.localeCompare(b.id))
+      .pop();
+
+    const sesNum = weightSessions.reduce((max, s) => {
+      const m = s.id.match(/^SES-(\d+)$/);
+      return m ? Math.max(max, parseInt(m[1], 10)) : max;
+    }, 0);
+
+    const newSession = {
+      id: `SES-${String(sesNum + 1).padStart(3, '0')}`,
+      scope: session.scope,
+      scopeValue: session.scopeValue,
+      fecha: session.fecha,
+      weighedIds,
+      pendingIds,
+      count: weighedIds.length,
+      avgWeight: Math.round(avgWeight * 10) / 10,
+      prevAvg: prevSession ? prevSession.avgWeight : null,
+      prevFecha: prevSession ? prevSession.fecha : null
+    };
+
+    setWeightSessions([...weightSessions, newSession]);
+    setIsBatchModalOpen(false);
+    setBatchSummary(newSession);
+  };
+
+  // HU Pesajes: El registro es inalterable; solo se agregan notas aclaratorias
+  const handleAddWeightNote = (recordId, noteText) => {
+    setWeightRecords(prevRecords =>
+      prevRecords.map(r => {
+        if (r.id === recordId) {
+          const newNote = {
+            id: r.notas.length + 1,
+            texto: noteText,
+            fecha: new Date().toISOString().split('T')[0]
+          };
+          return { ...r, notas: [...r.notas, newNote] };
+        }
+        return r;
+      })
+    );
+  };
+
+  // HU Pesajes: Filtrado y orden cronológico del historial
+  const filteredWeightRecords = weightRecords
+    .filter(r => {
+      const animal = animals.find(a => a.id === r.animalId);
+      const arete = animal ? animal.arete || '' : '';
+      const matchesSearch =
+        r.animalId.toLowerCase().includes(weightSearch.toLowerCase()) ||
+        arete.toLowerCase().includes(weightSearch.toLowerCase());
+      const matchesAnimal = weightAnimalFilter === 'todos' ? true : r.animalId === weightAnimalFilter;
+      return matchesSearch && matchesAnimal;
+    })
+    .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id.localeCompare(b.id));
+
+  // HU Alimentación: Crear o editar un plan personalizado
+  const handleSaveFeedPlan = (data) => {
+    if (data.id) {
+      // Edición de plan existente
+      setFeedPlans(feedPlans.map(p => p.id === data.id ? { ...p, ...data } : p));
+    } else {
+      const numbers = feedPlans.map(p => {
+        const match = p.id.match(/^PA-(\d+)$/);
+        return match ? parseInt(match[1], 10) : 0;
+      });
+      const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
+      const newId = `PA-${String(maxNum + 1).padStart(3, '0')}`;
+      setFeedPlans([...feedPlans, { ...data, id: newId }]);
+    }
+    setIsFeedPlanModalOpen(false);
+    setFeedPlanToEdit(null);
+    setFeedPlanIsDuplicate(false);
+  };
+
+  const openFeedPlanModal = (plan = null, isDuplicate = false) => {
+    setFeedPlanToEdit(plan);
+    setFeedPlanIsDuplicate(isDuplicate);
+    setIsFeedPlanModalOpen(true);
+  };
+
+  // HU Alimentación: Asignar plan. Solo uno activo por animal; el anterior se archiva.
+  const handleAssignFeedPlan = (data) => {
+    const numbers = feedAssignments.map(as => {
+      const match = as.id.match(/^AS-(\d+)$/);
+      return match ? parseInt(match[1], 10) : 0;
+    });
+    const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
+    const newId = `AS-${String(maxNum + 1).padStart(3, '0')}`;
+
+    // 1. Archivar el plan activo anterior del mismo animal (con fecha de cierre)
+    const updated = feedAssignments.map(as => {
+      if (as.animalId === data.animalId && as.estado === 'activo') {
+        return { ...as, estado: 'archivado', fechaCierre: data.fechaInicio };
+      }
+      return as;
+    });
+
+    // 2. Crear la nueva asignación activa
+    const newAssignment = {
+      id: newId,
+      animalId: data.animalId,
+      planId: data.planId,
+      fechaInicio: data.fechaInicio,
+      fechaCierre: null,
+      responsable: data.responsable,
+      estado: 'activo'
+    };
+
+    setFeedAssignments([...updated, newAssignment]);
+    setIsFeedAssignModalOpen(false);
+    setFeedAssignAnimalId(null);
+  };
+
+  const openFeedAssignModal = (animalId = null) => {
+    setFeedAssignAnimalId(animalId);
+    setIsFeedAssignModalOpen(true);
+  };
+
+  // Helper para mostrar el plan asignado en la tabla de asignaciones
+  const getPlanById = (planId) => feedPlans.find(p => p.id === planId);
 
   const filteredInventory = inventory.filter(item => {
     const term = inventorySearch.toLowerCase();
@@ -363,25 +755,43 @@ function App() {
               className={`nav-btn ${activeTab === 'inicio' ? 'active' : ''}`}
               onClick={() => setActiveTab('inicio')}
             >
-              <span className="nav-icon">🏠</span> Inicio
+Inicio
             </button>
             <button
               className={`nav-btn ${activeTab === 'animales' ? 'active' : ''}`}
               onClick={() => setActiveTab('animales')}
             >
-              <span className="nav-icon">🐂</span> Animales
+Animales
             </button>
             <button
               className={`nav-btn ${activeTab === 'salud' ? 'active' : ''}`}
               onClick={() => setActiveTab('salud')}
             >
-              <span className="nav-icon">💉</span> Historial Sanitario
+Historial Sanitario
+            </button>
+            <button
+              className={`nav-btn ${activeTab === 'crecimiento' ? 'active' : ''}`}
+              onClick={() => setActiveTab('crecimiento')}
+            >
+Peso y Crecimiento
+            </button>
+            <button
+              className={`nav-btn ${activeTab === 'alimentacion' ? 'active' : ''}`}
+              onClick={() => setActiveTab('alimentacion')}
+            >
+Alimentación
+            </button>
+            <button
+              className={`nav-btn ${activeTab === 'reportes' ? 'active' : ''}`}
+              onClick={() => setActiveTab('reportes')}
+            >
+Reportes
             </button>
             <button
               className={`nav-btn ${activeTab === 'inventario' ? 'active' : ''}`}
               onClick={() => setActiveTab('inventario')}
             >
-              <span className="nav-icon">📦</span> Inventario
+Inventario
             </button>
           </div>
         </div>
@@ -410,7 +820,7 @@ function App() {
             <div className="radio-buttons-filter">
               {['activos', 'bajas', 'todos'].map(f => (
                 <label key={f} className="radio-label">
-                  <input type="radio" name="status" checked={statusFilter === f} onChange={() => setStatusFilter(f)} />
+                  <input type="radio" name="status" value={f} checked={statusFilter === f} onChange={() => setStatusFilter(f)} />
                   <span className="custom-radio">{f.toUpperCase()}</span>
                 </label>
               ))}
@@ -423,7 +833,7 @@ function App() {
         <main className="main-content">
           <header className="main-header">
             <div className="search-wrapper" style={{ visibility: 'hidden' }}>
-              <input type="text" disabled />
+              <input type="text" disabled value="" readOnly aria-hidden="true" tabIndex={-1} />
             </div>
             <button className="btn btn-primary" onClick={() => { setPreselectedAnimalId(null); setPreselectedTipo(null); setPreselectedProducto(null); setIsHealthModalOpen(true); }}>
               Registrar Tratamiento
@@ -432,6 +842,11 @@ function App() {
 
           <section className="list-container">
             <WithdrawalMonitor list={withdrawalList} />
+            <LowGainAlerts
+              alerts={lowGainAlerts}
+              actions={growthActions}
+              onRegisterAction={openLowGainAction}
+            />
             <AlertDashboard
               alerts={activeAlertsList}
               animals={animals}
@@ -447,7 +862,7 @@ function App() {
             <div className="search-wrapper">
               <input
                 type="text"
-                placeholder="Buscar por ID o especie..."
+                aria-label="Buscar" placeholder="Buscar por ID o especie..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -482,6 +897,210 @@ function App() {
             )}
           </section>
         </main>
+      ) : activeTab === 'crecimiento' ? (
+        <main className="main-content">
+          <header className="main-header">
+            <div className="search-wrapper">
+              <input
+                type="text"
+                aria-label="Buscar" placeholder="Buscar por ID o arete del animal..."
+                value={weightSearch}
+                onChange={(e) => setWeightSearch(e.target.value)}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn btn-secondary" onClick={() => setIsBatchModalOpen(true)}>
+                Pesaje Masivo
+              </button>
+              <button className="btn btn-primary" onClick={() => setIsWeightModalOpen(true)}>
+                Registrar Pesaje
+              </button>
+            </div>
+          </header>
+
+          <section className="list-container">
+            <div className="filters-toolbar">
+              <div className="toolbar-title">
+                <h1>Historial de Pesajes</h1>
+                <span className="badge">{filteredWeightRecords.length} pesajes</span>
+              </div>
+
+              <div className="toolbar-filters">
+                <div className="select-wrapper">
+                  <select value={weightAnimalFilter} onChange={(e) => setWeightAnimalFilter(e.target.value)}>
+                    <option value="todos">Todos los animales</option>
+                    {animals.map(a => (
+                      <option key={a.id} value={a.id}>
+                        {a.id} {a.arete ? `[${a.arete}]` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {filteredWeightRecords.length > 0 ? (
+              <div className="health-records-grid">
+                {filteredWeightRecords.map(record => {
+                  const animal = animals.find(a => a.id === record.animalId);
+                  return (
+                    <WeightRecordCard
+                      key={record.id}
+                      record={record}
+                      animal={animal}
+                      onAddNote={(text) => handleAddWeightNote(record.id, text)}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <h2>No hay pesajes registrados</h2>
+                <p>No se encontraron registros de peso para esta selección.</p>
+                <button className="btn btn-primary" onClick={() => setIsWeightModalOpen(true)}>
+                  Registrar Pesaje
+                </button>
+              </div>
+            )}
+          </section>
+        </main>
+      ) : activeTab === 'reportes' ? (
+        <main className="main-content">
+          <header className="main-header">
+            <div className="report-tabs">
+              <button
+                className={`report-tab ${reportView === 'crecimiento' ? 'active' : ''}`}
+                onClick={() => setReportView('crecimiento')}
+              >
+Ganancia de Peso
+              </button>
+              <button
+                className={`report-tab ${reportView === 'costos' ? 'active' : ''}`}
+                onClick={() => setReportView('costos')}
+              >
+Costo de Alimentación
+              </button>
+            </div>
+          </header>
+          {reportView === 'crecimiento' ? (
+            <GrowthReport
+              animals={animals}
+              weightRecords={weightRecords}
+              weightTargets={weightTargets}
+              onDefineLoteTarget={openLoteTarget}
+            />
+          ) : (
+            <FeedCostReport
+              animals={animals}
+              weightRecords={weightRecords}
+              feedPlans={feedPlans}
+              feedAssignments={feedAssignments}
+              feedItems={feedItems}
+            />
+          )}
+        </main>
+      ) : activeTab === 'alimentacion' ? (
+        <main className="main-content">
+          <header className="main-header">
+            <div className="search-wrapper" style={{ visibility: 'hidden' }}>
+              <input type="text" disabled value="" readOnly aria-hidden="true" tabIndex={-1} />
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn btn-secondary" onClick={() => openFeedAssignModal(null)}>
+                Asignar Plan a Animal
+              </button>
+              <button className="btn btn-primary" onClick={() => openFeedPlanModal(null, false)}>
+                Crear Plan
+              </button>
+            </div>
+          </header>
+
+          <section className="list-container">
+            {/* Catálogo de planes */}
+            <div className="toolbar-title">
+              <h1>Catálogo de Planes de Alimentación</h1>
+              <span className="badge">{feedPlans.length} planes</span>
+            </div>
+
+            <div className="feed-plans-grid">
+              {feedPlans.map(plan => (
+                <FeedPlanCard
+                  key={plan.id}
+                  plan={plan}
+                  assignedCount={feedAssignments.filter(as => as.planId === plan.id && as.estado === 'activo').length}
+                  onEdit={openFeedPlanModal}
+                />
+              ))}
+            </div>
+
+            {/* Asignaciones activas por animal */}
+            <div className="toolbar-title" style={{ marginTop: '40px' }}>
+              <h1>Asignaciones Activas</h1>
+              <span className="badge">
+                {feedAssignments.filter(as => as.estado === 'activo').length} animales
+              </span>
+            </div>
+
+            {feedAssignments.filter(as => as.estado === 'activo').length > 0 ? (
+              <div className="table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Animal / Arete</th>
+                      <th>Plan Activo</th>
+                      <th>Propósito</th>
+                      <th>Inicio</th>
+                      <th>Responsable</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {feedAssignments
+                      .filter(as => as.estado === 'activo')
+                      .map(as => {
+                        const animal = animals.find(a => a.id === as.animalId);
+                        const plan = getPlanById(as.planId);
+                        return (
+                          <tr key={as.id}>
+                            <td>
+                              <strong>{as.animalId}</strong>
+                              {animal && animal.arete && <span className="muted-inline"> · {animal.arete}</span>}
+                            </td>
+                            <td>{plan ? plan.nombre : 'Plan eliminado'}</td>
+                            <td>{plan ? (FEED_PURPOSES[plan.proposito] || plan.proposito) : '—'}</td>
+                            <td>{formatFeedDate(as.fechaInicio)}</td>
+                            <td>{as.responsable}</td>
+                            <td>
+                              <button className="btn btn-outline btn-sm" onClick={() => openFeedAssignModal(as.animalId)}>
+                                Cambiar
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="empty-state">
+                <p>No hay planes de alimentación asignados todavía.</p>
+                <button className="btn btn-primary" onClick={() => openFeedAssignModal(null)}>
+                  Asignar Plan a Animal
+                </button>
+              </div>
+            )}
+
+            {/* Inventario de insumos de alimentación (Milestone 3) */}
+            <div style={{ marginTop: '40px' }}>
+              <FeedInventoryDashboard
+                items={feedItemsWithConsumption}
+                entries={feedStockEntries}
+                onAddItem={() => setIsFeedItemModalOpen(true)}
+                onAddEntry={(item) => setFeedStockEntryTarget(item)}
+              />
+            </div>
+          </section>
+        </main>
       ) : activeTab === 'inventario' ? (
 
         <main className="main-content">
@@ -489,7 +1108,7 @@ function App() {
             <div className="search-wrapper">
               <input
                 type="text"
-                placeholder="Buscar por Lote o Nombre del producto..."
+                aria-label="Buscar" placeholder="Buscar por Lote o Nombre del producto..."
                 value={inventorySearch}
                 onChange={(e) => setInventorySearch(e.target.value)}
               />
@@ -513,7 +1132,7 @@ function App() {
             <div className="search-wrapper">
               <input
                 type="text"
-                placeholder="Buscar por arete, producto o veterinario..."
+                aria-label="Buscar" placeholder="Buscar por arete, producto o veterinario..."
                 value={healthSearch}
                 onChange={(e) => setHealthSearch(e.target.value)}
               />
@@ -600,6 +1219,7 @@ function App() {
 
       {/* Modal de Registro */}
       <AnimalFormModal
+        key={isModalOpen ? `animal-form-${animalToEdit ? animalToEdit.id : 'nuevo'}` : 'animal-form-cerrado'}
         isOpen={isModalOpen}
         onClose={() => { setIsModalOpen(false); setAnimalToEdit(null); }}
         onSave={handleSaveAnimal}
@@ -614,6 +1234,12 @@ function App() {
         onBaja={openBajaModal}
         healthRecords={healthRecords}
         diagnoses={diagnoses}
+        feedPlans={feedPlans}
+        feedAssignments={selectedAnimal ? feedAssignments.filter(as => as.animalId === selectedAnimal.id) : []}
+        onAssignFeedPlan={(animalId) => openFeedAssignModal(animalId)}
+        animalWeightRecords={selectedAnimal ? weightRecords.filter(r => r.animalId === selectedAnimal.id) : []}
+        weightTarget={selectedAnimal ? getEffectiveTarget(selectedAnimal, weightTargets) : null}
+        onSetWeightTarget={(animalId) => openAnimalTarget(animalId)}
         onAddHealthRecord={(animalId) => {
           setPreselectedAnimalId(animalId);
           setPreselectedTipo(null);
@@ -652,6 +1278,70 @@ function App() {
         onClose={() => setIsDxModalOpen(false)}
         onSave={handleSaveDiagnosis}
         animals={animals}
+      />
+      {/* Modal de Registro de Pesaje (Milestone 3) */}
+      <WeightRecordFormModal
+        isOpen={isWeightModalOpen}
+        onClose={() => setIsWeightModalOpen(false)}
+        onSave={handleSaveWeightRecord}
+        animals={animals}
+      />
+      {/* Modal de Pesaje Masivo (Milestone 3) */}
+      <BatchWeightModal
+        isOpen={isBatchModalOpen}
+        onClose={() => setIsBatchModalOpen(false)}
+        onSave={handleSaveBatchWeights}
+        animals={animals}
+        weightRecords={weightRecords}
+      />
+      <BatchWeightSummaryModal
+        isOpen={!!batchSummary}
+        onClose={() => setBatchSummary(null)}
+        summary={batchSummary}
+        animals={animals}
+      />
+      {/* Modales de Planes de Alimentación (Milestone 3) */}
+      <FeedPlanFormModal
+        isOpen={isFeedPlanModalOpen}
+        onClose={() => { setIsFeedPlanModalOpen(false); setFeedPlanToEdit(null); setFeedPlanIsDuplicate(false); }}
+        onSave={handleSaveFeedPlan}
+        planToEdit={feedPlanToEdit}
+        isDuplicate={feedPlanIsDuplicate}
+      />
+      <FeedPlanAssignModal
+        isOpen={isFeedAssignModalOpen}
+        onClose={() => { setIsFeedAssignModalOpen(false); setFeedAssignAnimalId(null); }}
+        onAssign={handleAssignFeedPlan}
+        animals={animals}
+        plans={feedPlans}
+        assignments={feedAssignments}
+        preselectedAnimalId={feedAssignAnimalId}
+      />
+      {/* Modal de Acción Correctiva por bajo rendimiento (Milestone 3) */}
+      <LowGainActionModal
+        isOpen={isLowGainActionOpen}
+        onClose={() => { setIsLowGainActionOpen(false); setLowGainAlertTarget(null); }}
+        onSave={handleRegisterGrowthAction}
+        alert={lowGainAlertTarget}
+      />
+      {/* Modales de Inventario de Insumos (Milestone 3) */}
+      <FeedItemFormModal
+        isOpen={isFeedItemModalOpen}
+        onClose={() => setIsFeedItemModalOpen(false)}
+        onSave={handleSaveFeedItem}
+      />
+      <FeedStockEntryModal
+        isOpen={!!feedStockEntryTarget}
+        onClose={() => setFeedStockEntryTarget(null)}
+        onSave={handleAddFeedStockEntry}
+        item={feedStockEntryTarget}
+      />
+      {/* Modal de Peso Objetivo (Milestone 3) */}
+      <WeightTargetModal
+        isOpen={!!targetModalCtx}
+        onClose={() => setTargetModalCtx(null)}
+        onSave={handleSaveTarget}
+        ctx={targetModalCtx}
       />
       {/* Modal de Vacunación Colectiva (HU-11) */}
       <CollectiveVaccinationModal

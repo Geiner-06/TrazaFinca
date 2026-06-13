@@ -21,7 +21,7 @@ export default function BajaModal({ isOpen, onClose, onConfirm, animalId }) {
             <div className="modal-card baja-card">
                 <div className="modal-header">
                     <h2>Registrar Baja: {animalId}</h2>
-                    <button className="btn-close" onClick={onClose}>&times;</button>
+                    <button type="button" aria-label="Cerrar" className="btn-close" onClick={onClose}>&times;</button>
                 </div>
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
