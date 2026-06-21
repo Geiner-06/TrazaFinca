@@ -16,6 +16,9 @@ export default function AnimalDetailModal({
     diagnoses = SEED_DIAGNOSES,
     feedPlans = [],
     feedAssignments = [],
+    potreros = [],
+    potreroAssignments = [],
+    onReassignPotrero,
     onAssignFeedPlan,
     animalWeightRecords = [],
     weightTarget = null,
@@ -69,6 +72,10 @@ export default function AnimalDetailModal({
 
     // Proyección de peso objetivo (Milestone 3, criterios 3 y 4)
     const projection = projectTargetDate(animalWeightRecords, weightTarget ? weightTarget.value : null);
+
+    // Potrero Actual (HU-23)
+    const activePotreroAssignment = potreroAssignments.find(a => a.animalId === animal.id && a.fechaSalida === null);
+    const activePotrero = activePotreroAssignment ? potreros.find(p => p.id === activePotreroAssignment.potreroId) : null;
 
     const formatDate = (dateString) => {
         if (!dateString) return "No registrada";
@@ -178,6 +185,28 @@ export default function AnimalDetailModal({
                         <div className="detail-item">
                             <span className="label">Dueño / Finca</span>
                             <span className="value">{animal.dueño || 'Hacienda General'}</span>
+                        </div>
+                        <div className="detail-item">
+                            <span className="label">Lote</span>
+                            <span className="value">{animal.lote || 'Sin Lote'}</span>
+                        </div>
+                        <div className="detail-item" style={{ gridColumn: 'span 2' }}>
+                            <span className="label">Potrero Actual</span>
+                            <div className="value" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                {activePotrero ? (
+                                    <>
+                                        <strong>{activePotrero.nombre}</strong>
+                                        <span style={{ fontSize: '0.85rem', color: '#666' }}>(Ingreso: {formatDate(activePotreroAssignment.fechaIngreso)})</span>
+                                    </>
+                                ) : (
+                                    <span>Sin potrero asignado</span>
+                                )}
+                                {animal.estado === 'activo' && onReassignPotrero && (
+                                    <button className="btn btn-outline btn-sm" onClick={() => onReassignPotrero(animal.id)}>
+                                        Reasignar
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
 

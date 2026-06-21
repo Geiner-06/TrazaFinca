@@ -670,3 +670,21 @@ export const SEED_INVENTORY = [
         almacenamiento: "Temperatura ambiente"
     }
 ];
+
+export const SEED_POTREROS = [
+    { id: "PT-001", nombre: "Potrero Norte", areaHa: 10, capacidadPorHa: 2, estado: "activo" },
+    { id: "PT-002", nombre: "Potrero Sur", areaHa: 15, capacidadPorHa: 2, estado: "activo" },
+    { id: "PT-003", nombre: "Potrero Este", areaHa: 8, capacidadPorHa: 2, estado: "activo" },
+    { id: "PT-004", nombre: "Potrero Oeste", areaHa: 12, capacidadPorHa: 2, estado: "activo" }
+];
+
+export const SEED_POTRERO_ASSIGNMENTS = [
+    { id: "PA-001", animalId: "AN-001", potreroId: "PT-001", fechaIngreso: "2023-04-10", fechaSalida: null },
+    { id: "PA-002", animalId: "AN-002", potreroId: "PT-002", fechaIngreso: "2022-11-15", fechaSalida: null },
+    { id: "PA-003", animalId: "AN-003", potreroId: "PT-001", fechaIngreso: "2021-08-05", fechaSalida: null },
+    { id: "PA-004", animalId: "AN-004", potreroId: "PT-003", fechaIngreso: "2024-01-20", fechaSalida: null },
+    { id: "PA-005", animalId: "AN-005", potreroId: "PT-002", fechaIngreso: "2023-09-12", fechaSalida: "2025-10-10" },
+    { id: "PA-006", animalId: "AN-006", potreroId: "PT-004", fechaIngreso: "2020-05-18", fechaSalida: null },
+    { id: "PA-007", animalId: "AN-007", potreroId: "PT-002", fechaIngreso: "2025-09-01", fechaSalida: null },
+    { id: "PA-008", animalId: "AN-008", potreroId: "PT-002", fechaIngreso: "2025-10-01", fechaSalida: null }
+];
