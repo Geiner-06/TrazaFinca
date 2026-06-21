@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { SEED_ANIMALS, SEED_HEALTH_RECORDS, SEED_DIAGNOSES, SEED_INVENTORY, SEED_WEIGHT_RECORDS, SEED_FEED_PLANS, SEED_FEED_ASSIGNMENTS, SEED_WEIGHT_SESSIONS, SEED_FEED_ITEMS, SEED_FEED_STOCK_ENTRIES } from './data/seed.js';
+import { SEED_ANIMALS, SEED_HEALTH_RECORDS, SEED_DIAGNOSES, SEED_INVENTORY, SEED_WEIGHT_RECORDS, SEED_FEED_PLANS, SEED_FEED_ASSIGNMENTS, SEED_WEIGHT_SESSIONS, SEED_FEED_ITEMS, SEED_FEED_STOCK_ENTRIES, SEED_POTREROS, SEED_POTRERO_ASSIGNMENTS } from './data/seed.js';
 import AnimalCard from './components/AnimalCard.jsx';
 import AnimalFormModal from './components/AnimalFormModal.jsx';
 import AnimalDetailModal from './components/AnimalDatailModal.jsx';
@@ -27,6 +27,7 @@ import FeedInventoryDashboard from './components/FeedInventoryDashboard.jsx';
 import FeedItemFormModal from './components/FeedItemFormModal.jsx';
 import FeedStockEntryModal from './components/FeedStockEntryModal.jsx';
 import WeightTargetModal from './components/WeightTargetModal.jsx';
+import PotreroAssignmentModal from './components/PotreroAssignmentModal.jsx';
 import { FEED_PURPOSES, formatFeedDate } from './data/feedConstants.js';
 import { computeLowGainAlerts } from './data/growthAlerts.js';
 import { computeFeedConsumption } from './data/feedInventory.js';
@@ -51,6 +52,68 @@ function App() {
     return saved ? JSON.parse(saved) : SEED_DIAGNOSES;
   });
   const [isCollectiveModalOpen, setIsCollectiveModalOpen] = useState(false);
+
+  // HU-23: Estado para Potreros y Asignaciones
+  const [potreros, setPotreros] = useState(() => {
+    const saved = localStorage.getItem("trazafinca_potreros");
+    return saved ? JSON.parse(saved) : SEED_POTREROS;
+  });
+  const [potreroAssignments, setPotreroAssignments] = useState(() => {
+    const saved = localStorage.getItem("trazafinca_potrero_assignments");
+    return saved ? JSON.parse(saved) : SEED_POTRERO_ASSIGNMENTS;
+  });
+  const [isPotreroModalOpen, setIsPotreroModalOpen] = useState(false);
+  const [potreroPreselectedIds, setPotreroPreselectedIds] = useState([]);
+
+  useEffect(() => {
+    localStorage.setItem("trazafinca_potreros", JSON.stringify(potreros));
+  }, [potreros]);
+
+  useEffect(() => {
+    localStorage.setItem("trazafinca_potrero_assignments", JSON.stringify(potreroAssignments));
+  }, [potreroAssignments]);
+
+  const handleAssignPotrero = (animalIds, potreroId, fecha) => {
+    const potrero = potreros.find(p => p.id === potreroId);
+    if (!potrero) return;
+
+    const updatedAssignments = [...potreroAssignments];
+    const newAssignments = [];
+    
+    let maxIdNum = potreroAssignments.reduce((max, a) => {
+        const m = a.id.match(/^PA-(\d+)$/);
+        return m ? Math.max(max, parseInt(m[1], 10)) : max;
+    }, 0);
+
+    animalIds.forEach(animalId => {
+      const activeIdx = updatedAssignments.findIndex(a => a.animalId === animalId && a.fechaSalida === null);
+      if (activeIdx !== -1) {
+        if (updatedAssignments[activeIdx].potreroId === potreroId) return; 
+        updatedAssignments[activeIdx] = { ...updatedAssignments[activeIdx], fechaSalida: fecha };
+      }
+
+      maxIdNum++;
+      const newId = `PA-${String(maxIdNum).padStart(3, '0')}`;
+      newAssignments.push({
+        id: newId,
+        animalId,
+        potreroId,
+        fechaIngreso: fecha,
+        fechaSalida: null
+      });
+    });
+
+    setPotreroAssignments([...updatedAssignments, ...newAssignments]);
+
+    const updatedAnimals = animals.map(a => {
+        if (animalIds.includes(a.id)) {
+            return { ...a, potrero: potrero.nombre };
+        }
+        return a;
+    });
+    setAnimals(updatedAnimals);
+    setIsPotreroModalOpen(false);
+  };
 
   useEffect(() => {
     localStorage.setItem("trazafinca_animals", JSON.stringify(animals));
@@ -867,9 +930,14 @@ Inventario
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <button className="btn btn-primary" onClick={() => { setAnimalToEdit(null); setIsModalOpen(true) }}>
-              Registrar Animal
-            </button>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn btn-secondary" onClick={() => { setPotreroPreselectedIds([]); setIsPotreroModalOpen(true); }}>
+                Asignar a Potrero
+              </button>
+              <button className="btn btn-primary" onClick={() => { setAnimalToEdit(null); setIsModalOpen(true) }}>
+                Registrar Animal
+              </button>
+            </div>
           </header>
 
           <section className="list-container">
@@ -1236,6 +1304,12 @@ Costo de Alimentación
         diagnoses={diagnoses}
         feedPlans={feedPlans}
         feedAssignments={selectedAnimal ? feedAssignments.filter(as => as.animalId === selectedAnimal.id) : []}
+        potreros={potreros}
+        potreroAssignments={potreroAssignments}
+        onReassignPotrero={(animalId) => {
+          setPotreroPreselectedIds([animalId]);
+          setIsPotreroModalOpen(true);
+        }}
         onAssignFeedPlan={(animalId) => openFeedAssignModal(animalId)}
         animalWeightRecords={selectedAnimal ? weightRecords.filter(r => r.animalId === selectedAnimal.id) : []}
         weightTarget={selectedAnimal ? getEffectiveTarget(selectedAnimal, weightTargets) : null}
@@ -1349,6 +1423,16 @@ Costo de Alimentación
         onClose={() => setIsCollectiveModalOpen(false)}
         onSave={handleSaveCollectiveCampaign}
         animals={animals}
+      />
+      {/* Modal de Asignación a Potrero (HU-23) */}
+      <PotreroAssignmentModal
+        isOpen={isPotreroModalOpen}
+        onClose={() => setIsPotreroModalOpen(false)}
+        onSave={handleAssignPotrero}
+        animals={animals}
+        potreros={potreros}
+        potreroAssignments={potreroAssignments}
+        preselectedAnimalIds={potreroPreselectedIds}
       />
     </div>
   );
