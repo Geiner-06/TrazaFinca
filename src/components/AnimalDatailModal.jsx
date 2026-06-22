@@ -4,7 +4,6 @@ import { SEED_DIAGNOSES } from '../data/seed';
 import DiagnosisCard from './DiagnosisCard';
 import { FEED_PURPOSES, formatFeedDate } from '../data/feedConstants.js';
 import { projectTargetDate } from '../data/growthProjection.js';
-
 export default function AnimalDetailModal({
     animal,
     onClose,
@@ -26,30 +25,23 @@ export default function AnimalDetailModal({
 }) {
     const [activeNoteRecordId, setActiveNoteRecordId] = useState(null);
     const [newNoteText, setNewNoteText] = useState('');
-
     // Fecha de referencia para el prototipo
     const TODAY_STR = '2026-06-09';
-
     if (!animal) return null;
-
     const specClass = `species-${animal.especie.replace(/\s+/g, '.')}`;
     // 1. Filtrar y ordenar historial (Cronológico Descendente - HU-09 Criterio 1)
     const animalRecords = healthRecords
         .filter(r => r.animalId === animal.id)
         .sort((a, b) => new Date(b.fechaAplicacion) - new Date(a.fechaAplicacion));
-
     // 2. Calcular Período de Retiro (HU-09 Criterio 3 y 4)
     const getWithdrawalStatus = () => {
         // Buscamos el tratamiento más reciente que tenga periodo de retiro
         const lastWithRetiro = animalRecords.find(r => r.periodoRetiro && r.periodoRetiro > 0);
         if (!lastWithRetiro) return null;
-
         const appDate = new Date(lastWithRetiro.fechaAplicacion.replace(/-/g, '/'));
         const expiryDate = new Date(appDate);
         expiryDate.setDate(appDate.getDate() + lastWithRetiro.periodoRetiro);
-
         const todayDate = new Date(TODAY_STR.replace(/-/g, '/'));
-
         if (expiryDate > todayDate) {
             const diffDays = Math.ceil((expiryDate - todayDate) / (1000 * 60 * 60 * 24));
             return {
@@ -60,35 +52,28 @@ export default function AnimalDetailModal({
         }
         return null;
     };
-
     const withdrawal = getWithdrawalStatus();
-
     // Plan de alimentación: activo + historial archivado (Milestone 3, criterio 5)
     const activeAssignment = feedAssignments.find(as => as.estado === 'activo');
     const activePlan = activeAssignment ? feedPlans.find(p => p.id === activeAssignment.planId) : null;
     const archivedAssignments = feedAssignments
         .filter(as => as.estado === 'archivado')
         .sort((a, b) => new Date(b.fechaInicio) - new Date(a.fechaInicio));
-
     // Proyección de peso objetivo (Milestone 3, criterios 3 y 4)
     const projection = projectTargetDate(animalWeightRecords, weightTarget ? weightTarget.value : null);
-
     // Potrero Actual (HU-23)
     const activePotreroAssignment = potreroAssignments.find(a => a.animalId === animal.id && a.fechaSalida === null);
     const activePotrero = activePotreroAssignment ? potreros.find(p => p.id === activePotreroAssignment.potreroId) : null;
-
     const formatDate = (dateString) => {
         if (!dateString) return "No registrada";
         const parts = dateString.split('-');
         return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateString;
     };
-
     // HU-09 Criterio 5: Exportación PDF (Simulada)
     const handleExportPDF = () => {
         alert(`Generando Reporte Sanitario Oficial...\nFinca: Hacienda TrazaFinca\nAnimal: ${animal.id}\nArete: ${animal.arete || 'S/A'}\nFecha: ${formatDate(TODAY_STR)}`);
         window.print();
     };
-
     const getTreatmentBadgeClass = (type) => {
         switch (type) {
             case 'vacuna': return 'badge-vacuna';
@@ -98,7 +83,6 @@ export default function AnimalDetailModal({
             default: return 'badge-default';
         }
     };
-
     const getTreatmentLabel = (type) => {
         switch (type) {
             case 'vacuna': return 'Vacuna';
@@ -108,14 +92,12 @@ export default function AnimalDetailModal({
             default: return type;
         }
     };
-
     const submitNote = (recordId) => {
         if (!newNoteText.trim()) return;
         onAddNoteToRecord(recordId, newNoteText.trim());
         setNewNoteText('');
         setActiveNoteRecordId(null);
     };
-
     return (
         <div className="modal-overlay open">
             <div className="modal-card detail-card" style={{ maxWidth: '750px' }}>
@@ -130,7 +112,6 @@ export default function AnimalDetailModal({
                         </button>
                     </div>
                 </div>
-
                 <div className="detail-content scrollable-history">
                     {/* ADVERTENCIA DE RETIRO (HU-09 Criterio 4) */}
                     {withdrawal && (
@@ -168,7 +149,6 @@ export default function AnimalDetailModal({
                             </div>
                         </div>
                     </div>
-
                     <div className="detail-grid">
                         <div className="detail-item">
                             <span className="label">Raza</span>
@@ -209,7 +189,53 @@ export default function AnimalDetailModal({
                             </div>
                         </div>
                     </div>
+                    {/* Historial de Ubicaciones (HU-26) */}
+                    <div className="detail-health-section" style={{ marginTop: '30px' }}>
+                        <div className="detail-health-header">
+                            <h3>Historial de Ubicaciones</h3>
+                            <button className="btn btn-secondary btn-sm" onClick={() => {
+                                alert(`Generando Reporte Historial de Ubicaciones PDF...\nAnimal: ${animal.id}`);
+                            }}>
+                                Exportar PDF
+                            </button>
+                        </div>
+                        {potreroAssignments.filter(a => a.animalId === animal.id).length > 0 ? (
+                            <div className="detail-records-list">
+                                {potreroAssignments
+                                    .filter(a => a.animalId === animal.id)
+                                    .sort((a, b) => new Date(b.fechaIngreso) - new Date(a.fechaIngreso))
+                                    .map(as => {
+                                        const p = potreros.find(pt => pt.id === as.potreroId);
+                                        const pNombre = p ? p.nombre : 'Potrero Eliminado/Desconocido';
 
+                                        let dias = 0;
+                                        if (as.fechaIngreso) {
+                                            const fIn = new Date(as.fechaIngreso.replace(/-/g, '/'));
+                                            const fOut = as.fechaSalida ? new Date(as.fechaSalida.replace(/-/g, '/')) : new Date(TODAY_STR.replace(/-/g, '/'));
+                                            dias = Math.max(0, Math.ceil((fOut - fIn) / (1000 * 60 * 60 * 24)));
+                                        }
+                                        return (
+                                            <div key={as.id} className="detail-record-item">
+                                                <div className="detail-record-row-main">
+                                                    <span className="treatment-badge badge-sm badge-default">
+                                                        {pNombre}
+                                                    </span>
+                                                    <span className="detail-record-date">
+                                                        {formatDate(as.fechaIngreso)} → {as.fechaSalida ? formatDate(as.fechaSalida) : 'Actual'}
+                                                    </span>
+                                                </div>
+                                                <div className="detail-record-row-details">
+                                                    <p>Tiempo de permanencia: <strong>{dias} días</strong></p>
+                                                    <p>Estado del registro: <strong>Confirmado e Inalterable</strong></p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                            </div>
+                        ) : (
+                            <p className="no-records-placeholder">No hay historial de ubicaciones registrado.</p>
+                        )}
+                    </div>
                     {/* Plan de Alimentación (Milestone 3) */}
                     <div className="detail-health-section" style={{ marginTop: '30px' }}>
                         <div className="detail-health-header">
@@ -223,7 +249,6 @@ export default function AnimalDetailModal({
                                 </button>
                             )}
                         </div>
-
                         {activePlan ? (
                             <div className="active-feed-plan">
                                 <div className="active-feed-plan-head">
@@ -248,7 +273,6 @@ export default function AnimalDetailModal({
                                 <p className="active-feed-ingredients">
                                     <strong>Insumos:</strong> {activePlan.ingredientes}
                                 </p>
-
                                 {archivedAssignments.length > 0 && (
                                     <div className="feed-history">
                                         <h5>Planes anteriores ({archivedAssignments.length})</h5>
@@ -270,7 +294,6 @@ export default function AnimalDetailModal({
                             <p className="no-records-placeholder">Este animal no tiene un plan de alimentación asignado.</p>
                         )}
                     </div>
-
                     {/* Proyección de Peso Objetivo (Milestone 3) */}
                     <div className="detail-health-section" style={{ marginTop: '30px' }}>
                         <div className="detail-health-header">
@@ -281,7 +304,6 @@ export default function AnimalDetailModal({
                                 </button>
                             )}
                         </div>
-
                         {projection.status === 'sin_datos' ? (
                             <p className="no-records-placeholder">Este animal no tiene pesajes registrados.</p>
                         ) : projection.status === 'sin_objetivo' ? (
@@ -329,7 +351,6 @@ export default function AnimalDetailModal({
                             </div>
                         )}
                     </div>
-
                     {/* Historial Sanitario (HU-09) */}
                     <div className="detail-health-section">
                         <div className="detail-health-header">
@@ -343,7 +364,6 @@ export default function AnimalDetailModal({
                                 </button>
                             )}
                         </div>
-
                         {animalRecords.length > 0 ? (
                             <div className="detail-records-list">
                                 {animalRecords.map(record => (
@@ -358,18 +378,15 @@ export default function AnimalDetailModal({
                                             <p><strong>Producto:</strong> {record.productoComercial} (Lote: {record.lote})</p>
                                             <p><strong>Dosis:</strong> {record.dosis} | <strong>Vía:</strong> {record.viaAdministracion}</p>
                                             <p><strong>Responsable:</strong> {record.veterinario}</p>
-
                                             {record.periodoRetiro && (
                                                 <p className={`retiro-info-text ${withdrawal && withdrawal.product === record.productoComercial ? 'active-retiro' : ''}`}>
                                                     Período de retiro: <strong>{record.periodoRetiro} días</strong>
                                                 </p>
                                             )}
-
                                             {record.fechaProxima && (
                                                 <p className="next-date-hint">Próxima dosis: <strong>{formatDate(record.fechaProxima)}</strong></p>
                                             )}
                                         </div>
-
                                         <div className="detail-record-notes">
                                             {record.notas && record.notas.length > 0 && (
                                                 <div className="detail-record-notes-list">
@@ -381,7 +398,6 @@ export default function AnimalDetailModal({
                                                     ))}
                                                 </div>
                                             )}
-
                                             {activeNoteRecordId === record.id ? (
                                                 <div className="detail-note-input-row">
                                                     <input
@@ -426,7 +442,6 @@ export default function AnimalDetailModal({
                         )}
                     </div>
                 </div>
-
                 <div className="detail-footer">
                     <button className="btn btn-secondary" onClick={onClose}>Cerrar</button>
                     {animal.estado === 'activo' && (
