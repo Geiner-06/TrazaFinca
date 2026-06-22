@@ -28,18 +28,19 @@ import FeedItemFormModal from './components/FeedItemFormModal.jsx';
 import FeedStockEntryModal from './components/FeedStockEntryModal.jsx';
 import WeightTargetModal from './components/WeightTargetModal.jsx';
 import PotreroAssignmentModal from './components/PotreroAssignmentModal.jsx';
+import PotrerosDashboard from './components/PotrerosDashboard.jsx';
+import PotreroFormModal from './components/PotreroFormModal.jsx';
+import MassiveMovementModal from './components/MassiveMovementModal.jsx';
 import { FEED_PURPOSES, formatFeedDate } from './data/feedConstants.js';
 import { computeLowGainAlerts } from './data/growthAlerts.js';
 import { computeFeedConsumption } from './data/feedInventory.js';
 import { getEffectiveTarget } from './data/growthProjection.js';
 import './App.css';
-
 function App() {
   const [animals, setAnimals] = useState(() => {
     const saved = localStorage.getItem("trazafinca_animals");
     return saved ? JSON.parse(saved) : SEED_ANIMALS;
   });
-
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("activos");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,7 +53,6 @@ function App() {
     return saved ? JSON.parse(saved) : SEED_DIAGNOSES;
   });
   const [isCollectiveModalOpen, setIsCollectiveModalOpen] = useState(false);
-
   // HU-23: Estado para Potreros y Asignaciones
   const [potreros, setPotreros] = useState(() => {
     const saved = localStorage.getItem("trazafinca_potreros");
@@ -65,33 +65,31 @@ function App() {
   const [isPotreroModalOpen, setIsPotreroModalOpen] = useState(false);
   const [potreroPreselectedIds, setPotreroPreselectedIds] = useState([]);
 
+  const [isPotreroFormOpen, setIsPotreroFormOpen] = useState(false);
+  const [potreroToEdit, setPotreroToEdit] = useState(null);
+  const [isMassiveMovementOpen, setIsMassiveMovementOpen] = useState(false);
   useEffect(() => {
     localStorage.setItem("trazafinca_potreros", JSON.stringify(potreros));
   }, [potreros]);
-
   useEffect(() => {
     localStorage.setItem("trazafinca_potrero_assignments", JSON.stringify(potreroAssignments));
   }, [potreroAssignments]);
-
   const handleAssignPotrero = (animalIds, potreroId, fecha) => {
     const potrero = potreros.find(p => p.id === potreroId);
     if (!potrero) return;
-
     const updatedAssignments = [...potreroAssignments];
     const newAssignments = [];
-    
-    let maxIdNum = potreroAssignments.reduce((max, a) => {
-        const m = a.id.match(/^PA-(\d+)$/);
-        return m ? Math.max(max, parseInt(m[1], 10)) : max;
-    }, 0);
 
+    let maxIdNum = potreroAssignments.reduce((max, a) => {
+      const m = a.id.match(/^PA-(\d+)$/);
+      return m ? Math.max(max, parseInt(m[1], 10)) : max;
+    }, 0);
     animalIds.forEach(animalId => {
       const activeIdx = updatedAssignments.findIndex(a => a.animalId === animalId && a.fechaSalida === null);
       if (activeIdx !== -1) {
-        if (updatedAssignments[activeIdx].potreroId === potreroId) return; 
+        if (updatedAssignments[activeIdx].potreroId === potreroId) return;
         updatedAssignments[activeIdx] = { ...updatedAssignments[activeIdx], fechaSalida: fecha };
       }
-
       maxIdNum++;
       const newId = `PA-${String(maxIdNum).padStart(3, '0')}`;
       newAssignments.push({
@@ -102,24 +100,43 @@ function App() {
         fechaSalida: null
       });
     });
-
     setPotreroAssignments([...updatedAssignments, ...newAssignments]);
-
     const updatedAnimals = animals.map(a => {
-        if (animalIds.includes(a.id)) {
-            return { ...a, potrero: potrero.nombre };
-        }
-        return a;
+      if (animalIds.includes(a.id)) {
+        return { ...a, potrero: potrero.nombre };
+      }
+      return a;
     });
     setAnimals(updatedAnimals);
     setIsPotreroModalOpen(false);
   };
-
+  const handleSavePotrero = (data) => {
+    if (data.id) {
+      setPotreros(potreros.map(p => p.id === data.id ? data : p));
+    } else {
+      const numbers = potreros.map(p => {
+        const match = p.id.match(/^PT-(\d+)$/);
+        return match ? parseInt(match[1], 10) : 0;
+      });
+      const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
+      const newId = `PT-${String(maxNum + 1).padStart(3, '0')}`;
+      setPotreros([...potreros, { ...data, id: newId }]);
+    }
+    setPotreroToEdit(null);
+    setIsPotreroFormOpen(false);
+  };
+  const handleTogglePotreroStatus = (id, newStatus) => {
+    setPotreros(potreros.map(p => p.id === id ? { ...p, estado: newStatus } : p));
+  };
+  const handleMassiveMovement = (animalIds, destPotreroId, fecha, sourcePotreroId) => {
+    // Reutilizamos handleAssignPotrero que ya hace la lógica de actualizar asignaciones y animales
+    handleAssignPotrero(animalIds, destPotreroId, fecha);
+    setIsMassiveMovementOpen(false);
+  };
   useEffect(() => {
     localStorage.setItem("trazafinca_animals", JSON.stringify(animals));
   }, [animals]);
   const [animalToEdit, setAnimalToEdit] = useState(null);
-
   // HU-07: Estado para Registro Sanitario y Navegación
   const [activeTab, setActiveTab] = useState("inicio"); // "inicio" | "animales" | "salud"
   const [healthRecords, setHealthRecords] = useState(() => {
@@ -132,21 +149,17 @@ function App() {
   const [preselectedAnimalId, setPreselectedAnimalId] = useState(null);
   const [preselectedTipo, setPreselectedTipo] = useState(null);
   const [preselectedProducto, setPreselectedProducto] = useState(null);
-
   useEffect(() => {
     localStorage.setItem("trazafinca_health_records", JSON.stringify(healthRecords));
   }, [healthRecords]);
-
   const [inventorySearch, setInventorySearch] = useState("");
   const [inventory, setInventory] = useState(() => {
     const saved = localStorage.getItem("trazafinca_inventory");
     return saved ? JSON.parse(saved) : SEED_INVENTORY;
   });
-
   useEffect(() => {
     localStorage.setItem("trazafinca_inventory", JSON.stringify(inventory));
   }, [inventory]);
-
   // HU Pesajes (Milestone 3): Estado de registros de peso
   const [weightRecords, setWeightRecords] = useState(() => {
     const saved = localStorage.getItem("trazafinca_weight_records");
@@ -155,7 +168,6 @@ function App() {
   const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
   const [weightSearch, setWeightSearch] = useState("");
   const [weightAnimalFilter, setWeightAnimalFilter] = useState("todos");
-
   // Pesaje masivo por lote (sesiones)
   const [weightSessions, setWeightSessions] = useState(() => {
     const saved = localStorage.getItem("trazafinca_weight_sessions");
@@ -163,15 +175,12 @@ function App() {
   });
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [batchSummary, setBatchSummary] = useState(null);
-
   useEffect(() => {
     localStorage.setItem("trazafinca_weight_records", JSON.stringify(weightRecords));
   }, [weightRecords]);
-
   useEffect(() => {
     localStorage.setItem("trazafinca_weight_sessions", JSON.stringify(weightSessions));
   }, [weightSessions]);
-
   // HU Proyección de peso objetivo (Milestone 3)
   const [weightTargets, setWeightTargets] = useState(() => {
     const saved = localStorage.getItem("trazafinca_weight_targets");
@@ -179,11 +188,9 @@ function App() {
   });
   const [targetModalCtx, setTargetModalCtx] = useState(null);
   const [reportView, setReportView] = useState('crecimiento'); // 'crecimiento' | 'costos'
-
   useEffect(() => {
     localStorage.setItem("trazafinca_weight_targets", JSON.stringify(weightTargets));
   }, [weightTargets]);
-
   const openAnimalTarget = (animalId) => {
     setTargetModalCtx({
       mode: 'animal',
@@ -192,7 +199,6 @@ function App() {
       currentValue: weightTargets.byAnimal[animalId] ?? null
     });
   };
-
   const openLoteTarget = (lote) => {
     setTargetModalCtx({
       mode: 'lote',
@@ -201,7 +207,6 @@ function App() {
       currentValue: weightTargets.byLote[lote] ?? null
     });
   };
-
   const handleSaveTarget = (kg) => {
     if (!targetModalCtx) return;
     if (targetModalCtx.mode === 'animal') {
@@ -211,7 +216,6 @@ function App() {
     }
     setTargetModalCtx(null);
   };
-
   // HU Alimentación (Milestone 3): Planes de alimentación y asignaciones
   const [feedPlans, setFeedPlans] = useState(() => {
     const saved = localStorage.getItem("trazafinca_feed_plans");
@@ -226,15 +230,12 @@ function App() {
   const [feedPlanIsDuplicate, setFeedPlanIsDuplicate] = useState(false);
   const [isFeedAssignModalOpen, setIsFeedAssignModalOpen] = useState(false);
   const [feedAssignAnimalId, setFeedAssignAnimalId] = useState(null);
-
   useEffect(() => {
     localStorage.setItem("trazafinca_feed_plans", JSON.stringify(feedPlans));
   }, [feedPlans]);
-
   useEffect(() => {
     localStorage.setItem("trazafinca_feed_assignments", JSON.stringify(feedAssignments));
   }, [feedAssignments]);
-
   // HU Inventario de insumos (Milestone 3)
   const [feedItems, setFeedItems] = useState(() => {
     const saved = localStorage.getItem("trazafinca_feed_items");
@@ -246,18 +247,14 @@ function App() {
   });
   const [isFeedItemModalOpen, setIsFeedItemModalOpen] = useState(false);
   const [feedStockEntryTarget, setFeedStockEntryTarget] = useState(null);
-
   useEffect(() => {
     localStorage.setItem("trazafinca_feed_items", JSON.stringify(feedItems));
   }, [feedItems]);
-
   useEffect(() => {
     localStorage.setItem("trazafinca_feed_stock_entries", JSON.stringify(feedStockEntries));
   }, [feedStockEntries]);
-
   // Insumos con consumo diario proyectado y cobertura de stock
   const feedItemsWithConsumption = computeFeedConsumption(feedItems, feedPlans, feedAssignments, animals);
-
   const handleSaveFeedItem = (data) => {
     const numbers = feedItems.map(i => {
       const m = i.id.match(/^FI-(\d+)$/);
@@ -268,7 +265,6 @@ function App() {
     setFeedItems([...feedItems, { ...data, id: newId }]);
     setIsFeedItemModalOpen(false);
   };
-
   const handleAddFeedStockEntry = (data) => {
     const numbers = feedStockEntries.map(e => {
       const m = e.id.match(/^FE-(\d+)$/);
@@ -276,7 +272,6 @@ function App() {
     });
     const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
     const newId = `FE-${String(maxNum + 1).padStart(3, '0')}`;
-
     // Suma la cantidad al stock del insumo y actualiza el costo unitario registrado
     setFeedItems(feedItems.map(i =>
       i.id === data.feedItemId
@@ -286,7 +281,6 @@ function App() {
     setFeedStockEntries([...feedStockEntries, { ...data, id: newId }]);
     setFeedStockEntryTarget(null);
   };
-
   // HU Alertas de bajo rendimiento (Milestone 3): acciones correctivas
   const [growthActions, setGrowthActions] = useState(() => {
     const saved = localStorage.getItem("trazafinca_growth_actions");
@@ -294,26 +288,21 @@ function App() {
   });
   const [isLowGainActionOpen, setIsLowGainActionOpen] = useState(false);
   const [lowGainAlertTarget, setLowGainAlertTarget] = useState(null);
-
   useEffect(() => {
     localStorage.setItem("trazafinca_growth_actions", JSON.stringify(growthActions));
   }, [growthActions]);
-
   // Alertas de bajo rendimiento calculadas a partir de pesajes + planes activos
   const lowGainAlerts = computeLowGainAlerts(animals, weightRecords, feedAssignments, feedPlans);
-
   const handleRegisterGrowthAction = (data) => {
     const newId = `ACC-${String(growthActions.length + 1).padStart(3, '0')}`;
     setGrowthActions([...growthActions, { ...data, id: newId }]);
     setIsLowGainActionOpen(false);
     setLowGainAlertTarget(null);
   };
-
   const openLowGainAction = (alert) => {
     setLowGainAlertTarget(alert);
     setIsLowGainActionOpen(true);
   };
-
   // TF-16: Generación de ID Único
   const handleSaveAnimal = (newData) => {
     if (animalToEdit) {
@@ -327,25 +316,20 @@ function App() {
       });
       const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
       const newId = `AN-${String(maxNum + 1).padStart(3, '0')}`;
-
       setAnimals([...animals, { ...newData, id: newId, estado: 'activo' }]);
     }
     setIsModalOpen(false);
   };
-
   // TF-18: Lógica de filtrado
   const filteredAnimals = animals.filter(a => {
     const matchesSearch =
       a.id.toLowerCase().includes(search.toLowerCase()) ||
       a.especie.toLowerCase().includes(search.toLowerCase());
-
     const matchesStatus =
       statusFilter === "todos" ? true :
         statusFilter === "activos" ? a.estado === "activo" : a.estado === "baja";
-
     return matchesSearch && matchesStatus;
   });
-
   // HU-07 & HU-12: Guardar Registro Sanitario y Descontar Inventario
   const handleSaveHealthRecord = (newRecordData) => {
     // 1. Generar ID para el nuevo registro sanitario
@@ -355,7 +339,6 @@ function App() {
     });
     const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
     const newId = `REC-${String(maxNum + 1).padStart(3, '0')}`;
-
     // 2. Calcular fecha próxima (Revacunación) si aplica
     let fechaProxima = null;
     if (newRecordData.periodoRevacunacion && parseInt(newRecordData.periodoRevacunacion, 10) > 0) {
@@ -368,7 +351,6 @@ function App() {
       const d = String(date.getDate()).padStart(2, '0');
       fechaProxima = `${y}-${m}-${d}`;
     }
-
     // 3. Crear el objeto del nuevo registro
     const newRecord = {
       ...newRecordData,
@@ -377,7 +359,6 @@ function App() {
       notas: [],
       estado: 'confirmado'
     };
-
     // 4. LÓGICA DE INVENTARIO (HU-12): Descontar dosis del stock
     const updatedInventory = inventory.map(item => {
       // Comparamos nombre y lote exactamente
@@ -390,7 +371,6 @@ function App() {
       return item;
     });
     setInventory(updatedInventory);
-
     // 5. LÓGICA DE ALERTAS (HU-08): Resolver alertas antiguas pendientes
     const updatedHealthRecords = healthRecords.map(r => {
       if (
@@ -403,17 +383,14 @@ function App() {
       }
       return r;
     });
-
     // 6. ACTUALIZAR ESTADO FINAL (Un solo setHealthRecords)
     setHealthRecords([...updatedHealthRecords, newRecord]);
-
     // 7. CERRAR MODAL Y LIMPIAR
     setIsHealthModalOpen(false);
     setPreselectedAnimalId(null);
     setPreselectedTipo(null);
     setPreselectedProducto(null);
   };
-
   // HU-08: Manejadores para Alertas
   const handleResolveAlert = (recordId) => {
     setHealthRecords(prevRecords =>
@@ -422,17 +399,14 @@ function App() {
       )
     );
   };
-
   const handleQuickRegister = (animalId, tipoTratamiento, producto) => {
     setPreselectedAnimalId(animalId);
     setPreselectedTipo(tipoTratamiento);
     setPreselectedProducto(producto);
     setIsHealthModalOpen(true);
   };
-
   // Alertas activas para el Dashboard
   const activeAlertsList = healthRecords.filter(r => r.fechaProxima && r.alertaAtendida !== true);
-
   const handleAddClarificationNote = (recordId, noteText) => {
     const updatedRecords = healthRecords.map(r => {
       if (r.id === recordId) {
@@ -450,7 +424,6 @@ function App() {
     });
     setHealthRecords(updatedRecords);
   };
-
   // HU-07: Filtrado de registros sanitarios
   const filteredHealthRecords = healthRecords.filter(r => {
     const animal = animals.find(a => a.id === r.animalId);
@@ -460,26 +433,21 @@ function App() {
       arete.toLowerCase().includes(healthSearch.toLowerCase()) ||
       r.productoComercial.toLowerCase().includes(healthSearch.toLowerCase()) ||
       r.veterinario.toLowerCase().includes(healthSearch.toLowerCase());
-
     const matchesTreatment =
       treatmentFilter === 'todos' ? true : r.tipoTratamiento === treatmentFilter;
-
     return matchesSearch && matchesTreatment;
   });
-
   const stats = {
     total: animals.length,
     activos: animals.filter(a => a.estado === 'activo').length,
     bajas: animals.filter(a => a.estado === 'baja').length,
     tratamientos: healthRecords.length
   };
-
   const openEditModal = (animal) => {
     setAnimalToEdit(animal);
     setSelectedAnimal(null); // Cerramos el detalle
     setIsModalOpen(true);    // Abrimos el formulario
   };
-
   const handleConfirmBaja = (id, bajaInfo) => {
     const updatedAnimals = animals.map(a => {
       if (a.id === id) {
@@ -497,30 +465,24 @@ function App() {
     setSelectedAnimal(null); // Cerrar ficha de detalle
     setIsBajaModalOpen(false);
   };
-
   const openBajaModal = (id) => {
     setAnimalIdToBaja(id);
     setIsBajaModalOpen(true);
   };
-
   const [isDxModalOpen, setIsDxModalOpen] = useState(false);
-
   useEffect(() => {
     localStorage.setItem("trazafinca_diagnoses", JSON.stringify(diagnoses));
   }, [diagnoses]);
-
   const handleSaveDiagnosis = (dxData) => {
     const newId = `DX-${String(diagnoses.length + 1).padStart(3, '0')}`;
     setDiagnoses([...diagnoses, { ...dxData, id: newId }]);
     setIsDxModalOpen(false);
   };
-
   const handleSaveCollectiveCampaign = (animalIds, commonData) => {
     // 1. Crear registros individuales idénticos (Criterio 2)
     const newRecords = animalIds.map((animalId, index) => {
       const nextId = healthRecords.length + 1 + index;
       const newId = `REC-${String(nextId).padStart(3, '0')}`;
-
       // Calcular fecha próxima si aplica
       let fechaProxima = null;
       if (commonData.periodoRevacunacion) {
@@ -528,7 +490,6 @@ function App() {
         date.setDate(date.getDate() + parseInt(commonData.periodoRevacunacion));
         fechaProxima = date.toISOString().split('T')[0];
       }
-
       return {
         ...commonData,
         id: newId,
@@ -538,10 +499,8 @@ function App() {
         estado: 'confirmado'
       };
     });
-
     setHealthRecords([...healthRecords, ...newRecords]);
     setIsCollectiveModalOpen(false);
-
     // 2. Generar resumen para SENASA (Criterio 3)
     const totalDosis = animalIds.length * parseFloat(commonData.dosis || 0);
     alert(`Campaña finalizada con éxito\n` +
@@ -551,7 +510,6 @@ function App() {
       `Animales Tratados: ${animalIds.length}\n` +
       `Total Dosis Estimada: ${totalDosis} ${commonData.dosis.replace(/[0-9.]/g, '')}`);
   };
-
   // HU Pesajes: Guardar pesaje con cálculo automático de GDP (Ganancia Diaria de Peso)
   const handleSaveWeightRecord = (data) => {
     const numbers = weightRecords.map(r => {
@@ -560,13 +518,11 @@ function App() {
     });
     const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
     const newId = `PES-${String(maxNum + 1).padStart(3, '0')}`;
-
     // Pesaje anterior del mismo animal (el más reciente con fecha <= a la nueva)
     const previous = weightRecords
       .filter(r => r.animalId === data.animalId && r.fecha <= data.fecha)
       .sort((a, b) => a.fecha.localeCompare(b.fecha))
       .pop();
-
     let gdp = null;
     if (previous) {
       const days = (new Date(data.fecha.replace(/-/g, '/')) - new Date(previous.fecha.replace(/-/g, '/'))) / 86400000;
@@ -574,7 +530,6 @@ function App() {
         gdp = Math.round(((data.pesoKg - previous.pesoKg) / days) * 1000) / 1000;
       }
     }
-
     const newRecord = {
       ...data,
       id: newId,
@@ -584,33 +539,27 @@ function App() {
       notas: [],
       estado: 'confirmado'
     };
-
     setWeightRecords([...weightRecords, newRecord]);
     setIsWeightModalOpen(false);
   };
-
   // HU Pesaje masivo: crea un registro individual por cada animal pesado en la sesión
   const handleSaveBatchWeights = (session) => {
     let counter = weightRecords.reduce((max, r) => {
       const m = r.id.match(/^PES-(\d+)$/);
       return m ? Math.max(max, parseInt(m[1], 10)) : max;
     }, 0);
-
     const newRecords = session.entries.map(entry => {
       counter += 1;
       const newId = `PES-${String(counter).padStart(3, '0')}`;
-
       const previous = weightRecords
         .filter(r => r.animalId === entry.animalId && r.fecha <= session.fecha)
         .sort((a, b) => a.fecha.localeCompare(b.fecha))
         .pop();
-
       let gdp = null;
       if (previous) {
         const days = (new Date(session.fecha.replace(/-/g, '/')) - new Date(previous.fecha.replace(/-/g, '/'))) / 86400000;
         if (days > 0) gdp = Math.round(((entry.pesoKg - previous.pesoKg) / days) * 1000) / 1000;
       }
-
       return {
         id: newId,
         animalId: entry.animalId,
@@ -626,24 +575,19 @@ function App() {
         estado: 'confirmado'
       };
     });
-
     setWeightRecords([...weightRecords, ...newRecords]);
-
     // Construir la sesión con resumen y comparación contra la anterior del mismo lote
     const weighedIds = session.entries.map(e => e.animalId);
     const pendingIds = session.scopeAnimalIds.filter(id => !weighedIds.includes(id));
     const avgWeight = session.entries.reduce((s, e) => s + e.pesoKg, 0) / session.entries.length;
-
     const prevSession = weightSessions
       .filter(s => s.scope === session.scope && s.scopeValue === session.scopeValue)
       .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id.localeCompare(b.id))
       .pop();
-
     const sesNum = weightSessions.reduce((max, s) => {
       const m = s.id.match(/^SES-(\d+)$/);
       return m ? Math.max(max, parseInt(m[1], 10)) : max;
     }, 0);
-
     const newSession = {
       id: `SES-${String(sesNum + 1).padStart(3, '0')}`,
       scope: session.scope,
@@ -656,12 +600,10 @@ function App() {
       prevAvg: prevSession ? prevSession.avgWeight : null,
       prevFecha: prevSession ? prevSession.fecha : null
     };
-
     setWeightSessions([...weightSessions, newSession]);
     setIsBatchModalOpen(false);
     setBatchSummary(newSession);
   };
-
   // HU Pesajes: El registro es inalterable; solo se agregan notas aclaratorias
   const handleAddWeightNote = (recordId, noteText) => {
     setWeightRecords(prevRecords =>
@@ -678,7 +620,6 @@ function App() {
       })
     );
   };
-
   // HU Pesajes: Filtrado y orden cronológico del historial
   const filteredWeightRecords = weightRecords
     .filter(r => {
@@ -691,7 +632,6 @@ function App() {
       return matchesSearch && matchesAnimal;
     })
     .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id.localeCompare(b.id));
-
   // HU Alimentación: Crear o editar un plan personalizado
   const handleSaveFeedPlan = (data) => {
     if (data.id) {
@@ -710,13 +650,11 @@ function App() {
     setFeedPlanToEdit(null);
     setFeedPlanIsDuplicate(false);
   };
-
   const openFeedPlanModal = (plan = null, isDuplicate = false) => {
     setFeedPlanToEdit(plan);
     setFeedPlanIsDuplicate(isDuplicate);
     setIsFeedPlanModalOpen(true);
   };
-
   // HU Alimentación: Asignar plan. Solo uno activo por animal; el anterior se archiva.
   const handleAssignFeedPlan = (data) => {
     const numbers = feedAssignments.map(as => {
@@ -725,7 +663,6 @@ function App() {
     });
     const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
     const newId = `AS-${String(maxNum + 1).padStart(3, '0')}`;
-
     // 1. Archivar el plan activo anterior del mismo animal (con fecha de cierre)
     const updated = feedAssignments.map(as => {
       if (as.animalId === data.animalId && as.estado === 'activo') {
@@ -733,7 +670,6 @@ function App() {
       }
       return as;
     });
-
     // 2. Crear la nueva asignación activa
     const newAssignment = {
       id: newId,
@@ -744,20 +680,16 @@ function App() {
       responsable: data.responsable,
       estado: 'activo'
     };
-
     setFeedAssignments([...updated, newAssignment]);
     setIsFeedAssignModalOpen(false);
     setFeedAssignAnimalId(null);
   };
-
   const openFeedAssignModal = (animalId = null) => {
     setFeedAssignAnimalId(animalId);
     setIsFeedAssignModalOpen(true);
   };
-
   // Helper para mostrar el plan asignado en la tabla de asignaciones
   const getPlanById = (planId) => feedPlans.find(p => p.id === planId);
-
   const filteredInventory = inventory.filter(item => {
     const term = inventorySearch.toLowerCase();
     return (
@@ -766,13 +698,10 @@ function App() {
       item.principioActivo.toLowerCase().includes(term)
     );
   });
-
   const TODAY_STR = '2026-06-09';
-
   const withdrawalList = healthRecords.reduce((acc, record) => {
     const appDate = new Date(record.fechaAplicacion.replace(/-/g, '/'));
     const today = new Date(TODAY_STR.replace(/-/g, '/'));
-
     // Calcular fechas de liberación
     const getReleaseDate = (days) => {
       if (!days) return null;
@@ -780,13 +709,10 @@ function App() {
       date.setDate(appDate.getDate() + days);
       return date;
     };
-
     const releaseCarne = getReleaseDate(record.periodoRetiroCarne);
     const releaseLeche = getReleaseDate(record.periodoRetiroLeche);
-
     const isRestrictedCarne = releaseCarne && releaseCarne > today;
     const isRestrictedLeche = releaseLeche && releaseLeche > today;
-
     if (isRestrictedCarne || isRestrictedLeche) {
       acc.push({
         animalId: record.animalId,
@@ -801,7 +727,19 @@ function App() {
     }
     return acc;
   }, []);
-
+  // HU-28: Alertas de sobrecarga de pastoreo
+  const overgrazingAlerts = potreros.reduce((acc, p) => {
+    if (p.estado === 'en descanso' || p.estado === 'en mantenimiento') return acc;
+    const ocupacion = potreroAssignments.filter(a => a.potreroId === p.id && a.fechaSalida === null).length;
+    const maxima = p.capacidadMaxima || (p.areaHa * p.capacidadPorHa) || 1;
+    const porcentaje = (ocupacion / maxima) * 100;
+    if (porcentaje > 100) {
+      acc.push({ type: 'critical', message: `Sobrecarga Crítica: ${p.nombre} está al ${Math.round(porcentaje)}% de su capacidad (${ocupacion}/${maxima}).`, id: `OGC-${p.id}` });
+    } else if (porcentaje >= 90) {
+      acc.push({ type: 'warning', message: `Advertencia de Capacidad: ${p.nombre} está al ${Math.round(porcentaje)}% de su capacidad (${ocupacion}/${maxima}).`, id: `OGW-${p.id}` });
+    }
+    return acc;
+  }, []);
   return (
     <div className="app-container">
       <aside className="sidebar">
@@ -809,7 +747,6 @@ function App() {
           <div className="logo"><span>TrazaFinca</span></div>
           <p className="subtitle">Gestión Pecuaria</p>
         </div>
-
         {/* Menú de Navegación lateral */}
         <div className="sidebar-menu">
           <h3>Menú</h3>
@@ -818,47 +755,52 @@ function App() {
               className={`nav-btn ${activeTab === 'inicio' ? 'active' : ''}`}
               onClick={() => setActiveTab('inicio')}
             >
-Inicio
+              Inicio
             </button>
             <button
               className={`nav-btn ${activeTab === 'animales' ? 'active' : ''}`}
               onClick={() => setActiveTab('animales')}
             >
-Animales
+              Animales
             </button>
             <button
               className={`nav-btn ${activeTab === 'salud' ? 'active' : ''}`}
               onClick={() => setActiveTab('salud')}
             >
-Historial Sanitario
+              Historial Sanitario
             </button>
             <button
               className={`nav-btn ${activeTab === 'crecimiento' ? 'active' : ''}`}
               onClick={() => setActiveTab('crecimiento')}
             >
-Peso y Crecimiento
+              Peso y Crecimiento
             </button>
             <button
               className={`nav-btn ${activeTab === 'alimentacion' ? 'active' : ''}`}
               onClick={() => setActiveTab('alimentacion')}
             >
-Alimentación
+              Alimentación
             </button>
             <button
               className={`nav-btn ${activeTab === 'reportes' ? 'active' : ''}`}
               onClick={() => setActiveTab('reportes')}
             >
-Reportes
+              Reportes
             </button>
             <button
               className={`nav-btn ${activeTab === 'inventario' ? 'active' : ''}`}
               onClick={() => setActiveTab('inventario')}
             >
-Inventario
+              Inventario
+            </button>
+            <button
+              className={`nav-btn ${activeTab === 'potreros' ? 'active' : ''}`}
+              onClick={() => setActiveTab('potreros')}
+            >
+              Potreros
             </button>
           </div>
         </div>
-
         <div className="stats-section">
           <h3>Resumen</h3>
           <div className="stats-grid">
@@ -876,7 +818,6 @@ Inventario
             </div>
           </div>
         </div>
-
         {activeTab === 'animales' && (
           <div className="filter-group-sidebar">
             <h3>Filtrar por Estado</h3>
@@ -891,7 +832,6 @@ Inventario
           </div>
         )}
       </aside>
-
       {activeTab === 'inicio' ? (
         <main className="main-content">
           <header className="main-header">
@@ -902,8 +842,20 @@ Inventario
               Registrar Tratamiento
             </button>
           </header>
-
           <section className="list-container">
+            {overgrazingAlerts.length > 0 && (
+              <div className="alert-dashboard" style={{ marginBottom: '20px' }}>
+                <h2 style={{ color: '#d32f2f', marginBottom: '10px' }}>Alertas de Potreros (HU-28)</h2>
+                {overgrazingAlerts.map(alert => (
+                  <div key={alert.id} className="alert-card" style={{ borderLeft: `4px solid ${alert.type === 'critical' ? '#d32f2f' : '#ffb300'}` }}>
+                    <div className="alert-header">
+                      <span className="alert-icon">{alert.type === 'critical' ? '🔴' : '⚠️'}</span>
+                      <span className="alert-title" style={{ fontWeight: 'bold' }}>{alert.message}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             <WithdrawalMonitor list={withdrawalList} />
             <LowGainAlerts
               alerts={lowGainAlerts}
@@ -939,13 +891,11 @@ Inventario
               </button>
             </div>
           </header>
-
           <section className="list-container">
             <div className="toolbar-title">
               <h1>Animales {statusFilter}</h1>
               <span className="badge">{filteredAnimals.length} animales</span>
             </div>
-
             {filteredAnimals.length > 0 ? (
               <div className="animals-grid">
                 {filteredAnimals.map(a => (
@@ -985,14 +935,12 @@ Inventario
               </button>
             </div>
           </header>
-
           <section className="list-container">
             <div className="filters-toolbar">
               <div className="toolbar-title">
                 <h1>Historial de Pesajes</h1>
                 <span className="badge">{filteredWeightRecords.length} pesajes</span>
               </div>
-
               <div className="toolbar-filters">
                 <div className="select-wrapper">
                   <select value={weightAnimalFilter} onChange={(e) => setWeightAnimalFilter(e.target.value)}>
@@ -1006,7 +954,6 @@ Inventario
                 </div>
               </div>
             </div>
-
             {filteredWeightRecords.length > 0 ? (
               <div className="health-records-grid">
                 {filteredWeightRecords.map(record => {
@@ -1040,13 +987,13 @@ Inventario
                 className={`report-tab ${reportView === 'crecimiento' ? 'active' : ''}`}
                 onClick={() => setReportView('crecimiento')}
               >
-Ganancia de Peso
+                Ganancia de Peso
               </button>
               <button
                 className={`report-tab ${reportView === 'costos' ? 'active' : ''}`}
                 onClick={() => setReportView('costos')}
               >
-Costo de Alimentación
+                Costo de Alimentación
               </button>
             </div>
           </header>
@@ -1082,14 +1029,12 @@ Costo de Alimentación
               </button>
             </div>
           </header>
-
           <section className="list-container">
             {/* Catálogo de planes */}
             <div className="toolbar-title">
               <h1>Catálogo de Planes de Alimentación</h1>
               <span className="badge">{feedPlans.length} planes</span>
             </div>
-
             <div className="feed-plans-grid">
               {feedPlans.map(plan => (
                 <FeedPlanCard
@@ -1100,7 +1045,6 @@ Costo de Alimentación
                 />
               ))}
             </div>
-
             {/* Asignaciones activas por animal */}
             <div className="toolbar-title" style={{ marginTop: '40px' }}>
               <h1>Asignaciones Activas</h1>
@@ -1108,7 +1052,6 @@ Costo de Alimentación
                 {feedAssignments.filter(as => as.estado === 'activo').length} animales
               </span>
             </div>
-
             {feedAssignments.filter(as => as.estado === 'activo').length > 0 ? (
               <div className="table-wrapper">
                 <table className="data-table">
@@ -1157,7 +1100,6 @@ Costo de Alimentación
                 </button>
               </div>
             )}
-
             {/* Inventario de insumos de alimentación (Milestone 3) */}
             <div style={{ marginTop: '40px' }}>
               <FeedInventoryDashboard
@@ -1169,8 +1111,26 @@ Costo de Alimentación
             </div>
           </section>
         </main>
+      ) : activeTab === 'potreros' ? (
+        <main className="main-content">
+          <header className="main-header">
+            <div className="search-wrapper" style={{ visibility: 'hidden' }}>
+              <input type="text" disabled value="" readOnly aria-hidden="true" tabIndex={-1} />
+            </div>
+          </header>
+          <section className="list-container">
+            <PotrerosDashboard
+              potreros={potreros}
+              potreroAssignments={potreroAssignments}
+              animals={animals}
+              onAddPotrero={() => { setPotreroToEdit(null); setIsPotreroFormOpen(true); }}
+              onEditPotrero={(p) => { setPotreroToEdit(p); setIsPotreroFormOpen(true); }}
+              onToggleStatus={handleTogglePotreroStatus}
+              onMassiveMovement={() => setIsMassiveMovementOpen(true)}
+            />
+          </section>
+        </main>
       ) : activeTab === 'inventario' ? (
-
         <main className="main-content">
           <header className="main-header">
             <div className="search-wrapper">
@@ -1193,7 +1153,6 @@ Costo de Alimentación
             )}
           </section>
         </main>
-
       ) : (
         <main className="main-content">
           <header className="main-header">
@@ -1217,14 +1176,12 @@ Costo de Alimentación
               </button>
             </div>
           </header>
-
           <section className="list-container">
             <div className="filters-toolbar">
               <div className="toolbar-title">
                 <h1>Registro Sanitario</h1>
                 <span className="badge">{filteredHealthRecords.length} registros</span>
               </div>
-
               <div className="toolbar-filters">
                 <div className="select-wrapper">
                   <select value={treatmentFilter} onChange={(e) => setTreatmentFilter(e.target.value)}>
@@ -1237,7 +1194,6 @@ Costo de Alimentación
                 </div>
               </div>
             </div>
-
             {filteredHealthRecords.length > 0 ? (
               <div className="health-records-grid">
                 {filteredHealthRecords.map(record => {
@@ -1265,7 +1221,6 @@ Costo de Alimentación
               <h1>Historial de Diagnósticos y Morbilidad</h1>
               <span className="badge">{diagnoses.length} casos</span>
             </div>
-
             {diagnoses.length > 0 ? (
               <div className="health-records-grid"> {/* Reutilizamos el grid de salud */}
                 {diagnoses.map(dx => (
@@ -1284,7 +1239,6 @@ Costo de Alimentación
           </section>
         </main>
       )}
-
       {/* Modal de Registro */}
       <AnimalFormModal
         key={isModalOpen ? `animal-form-${animalToEdit ? animalToEdit.id : 'nuevo'}` : 'animal-form-cerrado'}
@@ -1293,7 +1247,6 @@ Costo de Alimentación
         onSave={handleSaveAnimal}
         animalToEdit={animalToEdit}
       />
-
       {/* Modal de Detalle (HU-03 / TF-17) */}
       <AnimalDetailModal
         animal={selectedAnimal}
@@ -1322,7 +1275,6 @@ Costo de Alimentación
         }}
         onAddNoteToRecord={handleAddClarificationNote}
       />
-
       {/* Modal de Baja (HU-06) */}
       <BajaModal
         isOpen={isBajaModalOpen}
@@ -1330,7 +1282,6 @@ Costo de Alimentación
         onClose={() => setIsBajaModalOpen(false)}
         onConfirm={handleConfirmBaja}
       />
-
       {/* Modal de Registro de Tratamiento (HU-07) */}
       <HealthRecordFormModal
         isOpen={isHealthModalOpen}
@@ -1434,8 +1385,23 @@ Costo de Alimentación
         potreroAssignments={potreroAssignments}
         preselectedAnimalIds={potreroPreselectedIds}
       />
+      {/* Modales Milestone 4 */}
+      <PotreroFormModal
+        isOpen={isPotreroFormOpen}
+        onClose={() => setIsPotreroFormOpen(false)}
+        onSave={handleSavePotrero}
+        potreroToEdit={potreroToEdit}
+        potreroAssignments={potreroAssignments}
+      />
+      <MassiveMovementModal
+        isOpen={isMassiveMovementOpen}
+        onClose={() => setIsMassiveMovementOpen(false)}
+        onSave={handleMassiveMovement}
+        potreros={potreros}
+        potreroAssignments={potreroAssignments}
+        animals={animals}
+      />
     </div>
   );
 }
-
 export default App;
