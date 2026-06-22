@@ -806,7 +806,7 @@ function App() {
     <div className="app-container">
       <aside className="sidebar">
         <div className="sidebar-header">
-          <div className="logo"><span>TrazaFinca</span></div>
+          <div className="logo"><span>FincaTraza</span></div>
           <p className="subtitle">Gestión Pecuaria</p>
         </div>
 
