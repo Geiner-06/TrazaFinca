@@ -5,14 +5,22 @@ const getCategoria = (animal) => {
     if (animal.categoria) return animal.categoria.toLowerCase();
     const esp = (animal.especie || '').toLowerCase();
     const sexo = (animal.sexo || '').toLowerCase();
-
-    if (esp.includes('engorde')) {
-        return sexo === 'macho' ? 'novillo' : 'novilla';
-    }
+    if (esp.includes('engorde')) return sexo === 'macho' ? 'novillo' : 'novilla';
     if (esp.includes('vaca') || esp.includes('leche')) return 'vaca';
     if (esp.includes('toro')) return 'toro';
-
     return esp || 'desconocido';
+};
+
+// HU-29: Colores y estilos por estado de ocupación
+const getStatusStyle = (status) => {
+    const map = {
+        bajo: { bg: '#eaf3de', border: '#639922', bar: '#639922', text: '#27500a', label: 'Baja' },
+        normal: { bg: '#e6f1fb', border: '#378add', bar: '#378add', text: '#0c447c', label: 'Media' },
+        advertencia: { bg: '#faeeda', border: '#ba7517', bar: '#ef9f27', text: '#633806', label: 'Alta' },
+        critico: { bg: '#fcebeb', border: '#e24b4a', bar: '#e24b4a', text: '#501313', label: 'Sobrecarga' },
+        inactivo: { bg: '#f1efe8', border: '#888780', bar: '#888780', text: '#444441', label: 'Inactivo' },
+    };
+    return map[status] || map.bajo;
 };
 
 export default function PotrerosDashboard({
@@ -21,314 +29,382 @@ export default function PotrerosDashboard({
     animals,
     onAddPotrero,
     onEditPotrero,
-    onDeletePotrero,
+    onToggleStatus,
     onMassiveMovement
 }) {
-    const [isFormOpen, setIsFormOpen] = useState(false);
-    const [editingPotrero, setEditingPotrero] = useState(null);
-    const [formData, setFormData] = useState({
-        nombre: '',
-        areaHa: '',
-        tipoPasto: '',
-        capacidadMaxima: '',
-        estado: 'disponible'
-    });
+    const [selectedPotreroId, setSelectedPotreroId] = useState(null);
+    const [viewMode, setViewMode] = useState('mapa');
 
-    // 1. CONTEO EN TIEMPO REAL: Asignaciones activas
-    const activeAssignments = useMemo(() => {
-        return potreroAssignments.filter(a => a.fechaSalida === null);
-    }, [potreroAssignments]);
+    // Solo asignaciones activas
+    const activeAssignments = useMemo(
+        () => potreroAssignments.filter(a => a.fechaSalida === null),
+        [potreroAssignments]
+    );
 
-    // Mapeo de ocupación en tiempo real por Potrero
-    const potrerosOcupacionInfo = useMemo(() => {
-        const info = {};
-        potreros.forEach(p => {
-            const asignados = activeAssignments.filter(a => a.potreroId === p.id);
-            const actual = asignados.length;
-            const maxima = Number(p.capacidadMaxima) || 1;
-            const porcentaje = (actual / maxima) * 100;
+    const getAnimalsInPotrero = (pId) => {
+        const ids = activeAssignments.filter(a => a.potreroId === pId).map(a => a.animalId);
+        return animals.filter(a => ids.includes(a.id));
+    };
 
-            info[p.id] = {
-                actual,
-                maxima,
-                porcentaje,
-                isFull: actual >= maxima,
-                canReceiveAnimals: p.estado === 'disponible'
-            };
-        });
-        return info;
-    }, [potreros, activeAssignments]);
+    const getOcupacionInfo = (pId) => {
+        const p = potreros.find(pt => pt.id === pId);
+        if (!p) return { actual: 0, maxima: 1, porcentaje: 0, status: 'desconocido' };
 
-    // 2. HU-28: GENERACIÓN DE ALERTAS EN TIEMPO REAL (No descartables manualmente)
-    const sobrecargaAlertas = useMemo(() => {
-        const alertas = [];
-        potreros.forEach(p => {
-            const info = potrerosOcupacionInfo[p.id];
-            if (!info) return;
+        const actual = activeAssignments.filter(a => a.potreroId === pId).length;
+        const maxima = p.capacidadMaxima || (p.areaHa * p.capacidadPorHa) || 1;
+        const porcentaje = (actual / maxima) * 100;
 
-            if (info.porcentaje > 100) {
-                alertas.push({
-                    potreroId: p.id,
-                    nombre: p.nombre,
-                    tipo: 'critica',
-                    mensaje: `CRÍTICO: El potrero "${p.nombre}" ha superado su capacidad máxima. Ocupación: ${info.actual}/${info.maxima} (${Math.round(info.porcentaje)}%).`,
-                    color: '#f44336',
-                    bgColor: '#ffebee',
-                    borderColor: '#f44336'
-                });
-            } else if (info.porcentaje >= 90) {
-                alertas.push({
-                    potreroId: p.id,
-                    nombre: p.nombre,
-                    tipo: 'advertencia',
-                    mensaje: `ADVERTENCIA: El potrero "${p.nombre}" está cerca del límite de sobrepastoreo. Ocupación: ${info.actual}/${info.maxima} (${Math.round(info.porcentaje)}%).`,
-                    color: '#b78103',
-                    bgColor: '#fff8e1',
-                    borderColor: '#ffb300'
-                });
-            }
-        });
-        return alertas;
-    }, [potreros, potrerosOcupacionInfo]);
+        const inactivo = p.estado === 'en descanso' || p.estado === 'en mantenimiento';
+        let status = 'normal';
+        if (inactivo) status = 'inactivo';
+        else if (porcentaje > 100) status = 'critico';
+        else if (porcentaje >= 90) status = 'advertencia';
+        else if (porcentaje < 50) status = 'bajo';
 
-    // Conteo global por categorías para el Inventario
-    const globalCounters = useMemo(() => {
-        const activeAnimalIds = activeAssignments.map(a => a.animalId);
-        const activeAnimalsList = animals.filter(a => activeAnimalIds.includes(a.id));
+        return { actual, maxima, porcentaje, status };
+    };
 
-        const categories = {};
-        activeAnimalsList.forEach(a => {
+    // Detalle del potrero seleccionado
+    const selectedPotrero = potreros.find(p => p.id === selectedPotreroId);
+    let selectedAnimals = [];
+    let animalsByCategory = {};
+    if (selectedPotrero) {
+        selectedAnimals = getAnimalsInPotrero(selectedPotrero.id);
+        selectedAnimals.forEach(a => {
             const cat = getCategoria(a);
-            if (!categories[cat]) categories[cat] = [];
-            categories[cat].push(a);
+            if (!animalsByCategory[cat]) animalsByCategory[cat] = [];
+            animalsByCategory[cat].push(a);
         });
-
-        return { total: activeAnimalsList.length, byCategory: categories };
-    }, [activeAssignments, animals]);
-
-    // Manejadores del Formulario (HU-27)
-    const handleOpenCreate = () => {
-        setEditingPotrero(null);
-        setFormData({ nombre: '', areaHa: '', tipoPasto: '', capacidadMaxima: '', estado: 'disponible' });
-        setIsFormOpen(true);
-    };
-
-    const handleOpenEdit = (potrero) => {
-        setEditingPotrero(potrero);
-        setFormData({
-            nombre: potrero.nombre,
-            areaHa: potrero.areaHa,
-            tipoPasto: potrero.tipoPasto || '',
-            capacidadMaxima: potrero.capacidadMaxima,
-            estado: potrero.estado
-        });
-        setIsFormOpen(true);
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (editingPotrero) {
-            onEditPotrero({ ...editingPotrero, ...formData });
-        } else {
-            onAddPotrero({ id: Date.now().toString(), ...formData });
-        }
-        setIsFormOpen(false);
-    };
-
-    const handleDelete = (potreroId) => {
-        const info = potrerosOcupacionInfo[potreroId];
-        if (info && info.actual > 0) {
-            alert("No se puede eliminar un potrero que tenga animales asignados actualmente. Solo se permite desactivarlo.");
-            return;
-        }
-        if (confirm("¿Está seguro de eliminar este potrero?")) {
-            onDeletePotrero(potreroId);
-        }
-    };
+    }
 
     return (
-        <div className="potreros-dashboard" style={{ padding: '20px', fontFamily: 'sans-serif', backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
+        <div className="potreros-dashboard">
 
-            {/* SECCIÓN HU-28: PANEL DE ALERTAS EN PANTALLA PRINCIPAL */}
-            {sobrecargaAlertas.length > 0 && (
-                <div className="alerts-section" style={{ marginBottom: '25px' }}>
-                    <h3 style={{ color: '#d32f2f', marginTop: 0, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        ⚠️ Alertas Activas de Riesgo de Sobrepastoreo
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {sobrecargaAlertas.map((alerta) => (
-                            <div
-                                key={alerta.potreroId}
-                                style={{
-                                    padding: '12px 20px',
-                                    backgroundColor: alerta.bgColor,
-                                    color: alerta.color,
-                                    border: `1px solid ${alerta.borderColor}`,
-                                    borderRadius: '6px',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    fontWeight: '500',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                                }}
-                            >
-                                <span>{alerta.mensaje}</span>
-                                <span style={{ fontSize: '0.8rem', fontStyle: 'italic', opacity: 0.8, background: '#fff', padding: '4px 8px', borderRadius: '4px', border: `1px solid ${alerta.borderColor}` }}>
-                                    Ajuste la capacidad o traslade lotes para solucionar
-                                </span>
+            {/* Tabs de vista */}
+            <div className="report-tabs" style={{ marginBottom: '20px' }}>
+                <button
+                    className={`report-tab ${viewMode === 'mapa' ? 'active' : ''}`}
+                    onClick={() => setViewMode('mapa')}
+                >
+                    Mapa de Potreros
+                </button>
+                <button
+                    className={`report-tab ${viewMode === 'catalogo' ? 'active' : ''}`}
+                    onClick={() => setViewMode('catalogo')}
+                >
+                    Catálogo de Potreros
+                </button>
+            </div>
+
+            {/* ── VISTA MAPA (HU-29) ── */}
+            {viewMode === 'mapa' && (
+                <div className="map-view-container" style={{ display: 'flex', gap: '20px' }}>
+
+                    {/* Mapa visual */}
+                    <div className="potreros-map" style={{ flex: '2' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                            <h3>Distribución Espacial</h3>
+                            <button className="btn btn-secondary" onClick={onMassiveMovement}>
+                                Traslado Masivo
+                            </button>
+                        </div>
+
+                        {/* Grid de tarjetas de potrero */}
+                        <div className="map-grid" style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                            gap: '15px'
+                        }}>
+                            {potreros.map(p => {
+                                const info = getOcupacionInfo(p.id);
+                                const s = getStatusStyle(info.status);
+                                const isSelected = selectedPotreroId === p.id;
+
+                                return (
+                                    <div
+                                        key={p.id}
+                                        onClick={() => setSelectedPotreroId(p.id)}
+                                        style={{
+                                            position: 'relative',
+                                            overflow: 'hidden',
+                                            padding: '15px',
+                                            borderRadius: '10px',
+                                            border: `2px solid ${isSelected ? '#000' : s.border}`,
+                                            backgroundColor: s.bg,
+                                            cursor: 'pointer',
+                                            textAlign: 'center',
+                                            boxShadow: isSelected ? '0 0 0 3px rgba(0,0,0,0.15)' : 'none',
+                                            transition: 'transform 0.15s, box-shadow 0.15s',
+                                            transform: isSelected ? 'scale(1.05)' : 'scale(1)'
+                                        }}
+                                    >
+                                        {/* HU-29: patrón de rayas para potreros inactivos */}
+                                        {info.status === 'inactivo' && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                inset: 0,
+                                                borderRadius: '10px',
+                                                pointerEvents: 'none',
+                                                background: 'repeating-linear-gradient(45deg, rgba(0,0,0,0.04) 0, rgba(0,0,0,0.04) 6px, transparent 6px, transparent 12px)'
+                                            }} />
+                                        )}
+
+                                        {/* HU-29: ícono según estado */}
+                                        <div style={{ fontSize: '26px', marginBottom: '6px', opacity: 0.75 }}>
+                                            {info.status === 'inactivo' ? '💤' : '🐄'}
+                                        </div>
+
+                                        <h4 style={{ margin: '0 0 5px 0', fontSize: '13px', color: s.text }}>
+                                            {p.nombre}
+                                        </h4>
+                                        <div style={{ fontSize: '12px', color: s.text, opacity: 0.85 }}>
+                                            {info.status === 'inactivo' ? (
+                                                <span style={{ textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '11px' }}>
+                                                    {p.estado}
+                                                </span>
+                                            ) : (
+                                                <span>{info.actual} / {info.maxima} ({Math.round(info.porcentaje)}%)</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Leyenda HU-29 */}
+                        <div style={{ marginTop: '20px', display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '0.82rem' }}>
+                            {[
+                                { status: 'bajo', label: 'Baja (<50%)' },
+                                { status: 'normal', label: 'Media (50–90%)' },
+                                { status: 'advertencia', label: 'Alta (>90%)' },
+                                { status: 'critico', label: 'Sobrecarga (>100%)' },
+                                { status: 'inactivo', label: 'En descanso / mantenimiento' },
+                            ].map(({ status, label }) => {
+                                const s = getStatusStyle(status);
+                                return (
+                                    <div key={status} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <div style={{
+                                            width: '14px', height: '14px', borderRadius: '3px',
+                                            background: s.bg, border: `1.5px solid ${s.border}`,
+                                            flexShrink: 0
+                                        }} />
+                                        <span style={{ color: '#555' }}>{label}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Panel lateral de detalle (HU-24 + HU-29) */}
+                    <div
+                        className="potrero-detail"
+                        style={{
+                            flex: '1',
+                            background: '#fff',
+                            border: '1px solid #ddd',
+                            borderRadius: '10px',
+                            padding: '20px',
+                            maxHeight: '600px',
+                            overflowY: 'auto'
+                        }}
+                    >
+                        {selectedPotrero ? (() => {
+                            const info = getOcupacionInfo(selectedPotrero.id);
+                            const s = getStatusStyle(info.status);
+                            return (
+                                <>
+                                    <h2 style={{ marginBottom: '4px' }}>{selectedPotrero.nombre}</h2>
+                                    <p style={{ color: '#666', marginBottom: '16px', fontSize: '13px' }}>
+                                        {selectedPotrero.areaHa} ha · Pasto: {selectedPotrero.tipoPasto || 'No definido'}
+                                    </p>
+
+                                    {/* HU-29: aviso visual de potrero inactivo */}
+                                    {info.status === 'inactivo' && (
+                                        <div style={{
+                                            padding: '10px 12px',
+                                            borderRadius: '8px',
+                                            background: s.bg,
+                                            color: s.text,
+                                            fontSize: '13px',
+                                            marginBottom: '16px',
+                                            border: `1px solid ${s.border}`
+                                        }}>
+                                            ⏸ Potrero <strong>{selectedPotrero.estado}</strong> — sin asignaciones activas
+                                        </div>
+                                    )}
+
+                                    {/* Barra de ocupación con badge de estado */}
+                                    <div style={{ marginBottom: '20px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                            <span style={{ fontSize: '13px', color: '#666' }}>Ocupación</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <strong style={{ fontSize: '13px' }}>
+                                                    {Math.round(info.porcentaje)}% ({info.actual}/{info.maxima})
+                                                </strong>
+                                                {/* HU-29: badge de estado */}
+                                                <span style={{
+                                                    fontSize: '11px',
+                                                    padding: '2px 8px',
+                                                    borderRadius: '20px',
+                                                    background: s.bg,
+                                                    color: s.text,
+                                                    fontWeight: 500,
+                                                    border: `1px solid ${s.border}`
+                                                }}>
+                                                    {s.label}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        {/* Barra animada */}
+                                        <div style={{ height: '10px', background: '#eee', borderRadius: '5px', overflow: 'hidden' }}>
+                                            <div style={{
+                                                height: '100%',
+                                                background: s.bar,
+                                                width: `${Math.min(info.porcentaje, 100)}%`,
+                                                transition: 'width 0.4s ease'
+                                            }} />
+                                        </div>
+                                    </div>
+
+                                    {/* Desglose por categoría (HU-24) */}
+                                    <h3 style={{ marginBottom: '10px' }}>Desglose de Animales</h3>
+                                    {selectedAnimals.length === 0 ? (
+                                        <p style={{ fontStyle: 'italic', color: '#888', fontSize: '13px' }}>
+                                            No hay animales asignados a este potrero actualmente.
+                                        </p>
+                                    ) : (
+                                        <>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
+                                                {Object.keys(animalsByCategory).map(cat => (
+                                                    <div key={cat} style={{
+                                                        background: '#f0f4f8',
+                                                        padding: '4px 10px',
+                                                        borderRadius: '15px',
+                                                        fontSize: '12px'
+                                                    }}>
+                                                        <strong style={{ textTransform: 'capitalize' }}>{cat}s:</strong> {animalsByCategory[cat].length}
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <h4 style={{ marginBottom: '8px' }}>Lista Detallada</h4>
+                                            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                                                {selectedAnimals.map(a => (
+                                                    <li key={a.id} style={{
+                                                        padding: '8px 0',
+                                                        borderBottom: '1px solid #eee',
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        fontSize: '13px'
+                                                    }}>
+                                                        <span>
+                                                            <strong>{a.id}</strong>
+                                                            {a.arete && ` (${a.arete})`}
+                                                        </span>
+                                                        <span style={{ color: '#666', textTransform: 'capitalize' }}>
+                                                            {getCategoria(a)}
+                                                        </span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </>
+                                    )}
+                                </>
+                            );
+                        })() : (
+                            <div style={{ textAlign: 'center', color: '#888', marginTop: '100px' }}>
+                                <div style={{ fontSize: '32px', marginBottom: '10px', opacity: 0.4 }}>🗺️</div>
+                                <p style={{ fontSize: '14px' }}>Seleccione un potrero en el mapa para ver sus detalles</p>
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
             )}
 
-            {/* PANEL SUPERIOR: TRASLADO MASIVO Y CONTEO GLOBAL */}
-            <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #ddd', marginBottom: '25px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                    <h2 style={{ margin: 0, color: '#333' }}>Control de Inventario en Tiempo Real</h2>
-                    <button
-                        onClick={onMassiveMovement}
-                        style={{ padding: '10px 20px', backgroundColor: '#2196f3', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}
-                    >
-                        Movimiento Masivo entre Lotes
-                    </button>
+            {/* ── VISTA CATÁLOGO (HU-27) ── */}
+            {viewMode === 'catalogo' && (
+                <div className="catalogo-view">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <h3>Catálogo de Potreros</h3>
+                        <button className="btn btn-primary" onClick={onAddPotrero}>Crear Potrero</button>
+                    </div>
+                    <div className="table-wrapper">
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre / Código</th>
+                                    <th>Área (ha)</th>
+                                    <th>Tipo Pasto</th>
+                                    <th>Capacidad Máx.</th>
+                                    <th>Ocupación Actual</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {potreros.map(p => {
+                                    const info = getOcupacionInfo(p.id);
+                                    const s = getStatusStyle(info.status);
+                                    return (
+                                        <tr key={p.id}>
+                                            <td><strong>{p.nombre}</strong></td>
+                                            <td>{p.areaHa}</td>
+                                            <td>{p.tipoPasto || '—'}</td>
+                                            <td>{info.maxima}</td>
+                                            <td>
+                                                {info.actual}
+                                                <span style={{ marginLeft: '5px', color: s.text, fontSize: '12px' }}>
+                                                    ({Math.round(info.porcentaje)}%)
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span style={{
+                                                    display: 'inline-block',
+                                                    fontSize: '11px',
+                                                    padding: '3px 9px',
+                                                    borderRadius: '20px',
+                                                    background: s.bg,
+                                                    color: s.text,
+                                                    fontWeight: 500,
+                                                    border: `1px solid ${s.border}`
+                                                }}>
+                                                    {p.estado}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <button
+                                                    className="btn btn-outline btn-sm"
+                                                    onClick={() => onEditPotrero(p)}
+                                                >
+                                                    Editar
+                                                </button>
+                                                {info.actual === 0 && p.estado === 'disponible' && (
+                                                    <button
+                                                        className="btn btn-secondary btn-sm"
+                                                        style={{ marginLeft: '5px' }}
+                                                        onClick={() => onToggleStatus(p.id, 'en descanso')}
+                                                    >
+                                                        Dar Descanso
+                                                    </button>
+                                                )}
+                                                {p.estado !== 'disponible' && (
+                                                    <button
+                                                        className="btn btn-secondary btn-sm"
+                                                        style={{ marginLeft: '5px' }}
+                                                        onClick={() => onToggleStatus(p.id, 'disponible')}
+                                                    >
+                                                        Habilitar
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-
-                <p style={{ margin: '0 0 15px 0', color: '#555' }}>Total de animales en pastoreo: <strong>{globalCounters.total}</strong></p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                    {Object.keys(globalCounters.byCategory).map(cat => (
-                        <div key={cat} style={{ background: '#f0f4f8', padding: '8px 15px', borderRadius: '20px', fontSize: '0.9rem', color: '#333' }}>
-                            <strong style={{ textTransform: 'capitalize' }}>{cat}s:</strong> {globalCounters.byCategory[cat].length}
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* SECCIÓN HU-27: CATÁLOGO DE POTREROS */}
-            <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #ddd', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <h3 style={{ margin: 0, color: '#333' }}>Catálogo de Potreros</h3>
-                    <button
-                        onClick={handleOpenCreate}
-                        style={{ padding: '8px 16px', backgroundColor: '#4caf50', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}
-                    >
-                        + Crear Potrero
-                    </button>
-                </div>
-
-                {/* FORMULARIO DINÁMICO */}
-                {isFormOpen && (
-                    <form onSubmit={handleSubmit} style={{ background: '#f9f9f9', padding: '20px', borderRadius: '6px', marginBottom: '20px', border: '1px solid #eee' }}>
-                        <h4 style={{ margin: '0 0 15px 0' }}>{editingPotrero ? 'Editar Potrero' : 'Nuevo Potrero'}</h4>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px', marginBottom: '15px' }}>
-                            <label style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
-                                Nombre/Código:
-                                <input type="text" required value={formData.nombre} onChange={e => setFormData({ ...formData, nombre: e.target.value })} style={{ width: '100%', padding: '8px', marginTop: '5px', boxSizing: 'border-box' }} />
-                            </label>
-                            <label style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
-                                Área (Hectáreas):
-                                <input type="number" step="0.01" required value={formData.areaHa} onChange={e => setFormData({ ...formData, areaHa: e.target.value })} style={{ width: '100%', padding: '8px', marginTop: '5px', boxSizing: 'border-box' }} />
-                            </label>
-                            <label style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
-                                Tipo de Pasto:
-                                <input type="text" value={formData.tipoPasto} onChange={e => setFormData({ ...formData, tipoPasto: e.target.value })} style={{ width: '100%', padding: '8px', marginTop: '5px', boxSizing: 'border-box' }} />
-                            </label>
-                            <label style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
-                                Capacidad Máxima (Animales):
-                                <input type="number" required value={formData.capacidadMaxima} onChange={e => setFormData({ ...formData, capacidadMaxima: e.target.value })} style={{ width: '100%', padding: '8px', marginTop: '5px', boxSizing: 'border-box' }} />
-                            </label>
-                            <label style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
-                                Estado:
-                                <select value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })} style={{ width: '100%', padding: '8px', marginTop: '5px', boxSizing: 'border-box' }}>
-                                    <option value="disponible">Disponible</option>
-                                    <option value="en descanso">En descanso</option>
-                                    <option value="en mantenimiento">En mantenimiento</option>
-                                </select>
-                            </label>
-                        </div>
-                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                            <button type="button" onClick={() => setIsFormOpen(false)} style={{ padding: '8px 16px', background: '#ccc', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Cancelar</button>
-                            <button type="submit" style={{ padding: '8px 16px', background: '#4caf50', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Guardar</button>
-                        </div>
-                    </form>
-                )}
-
-                {/* LISTADO DE POTREROS */}
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                        <thead>
-                            <tr style={{ borderBottom: '2px solid #eee', background: '#f4f4f4' }}>
-                                <th style={{ padding: '12px' }}>Nombre/Código</th>
-                                <th style={{ padding: '12px' }}>Características</th>
-                                <th style={{ padding: '12px' }}>Estado</th>
-                                <th style={{ padding: '12px', width: '35%' }}>Ocupación Visual vs Capacidad</th>
-                                <th style={{ padding: '12px', textAlign: 'right' }}>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {potreros.map(p => {
-                                const info = potrerosOcupacionInfo[p.id] || { actual: 0, maxima: 1, porcentaje: 0, canReceiveAnimals: true };
-
-                                let barColor = '#4caf50';
-                                if (p.estado !== 'disponible') barColor = '#9e9e9e';
-                                else if (info.porcentaje > 100) barColor = '#f44336'; // Crítico
-                                else if (info.porcentaje >= 90) barColor = '#ffb300'; // Advertencia
-
-                                return (
-                                    <tr key={p.id} style={{ borderBottom: '1px solid #eee', background: info.porcentaje > 100 ? '#ffebee' : info.porcentaje >= 90 ? '#fff8e1' : 'transparent' }}>
-                                        <td style={{ padding: '12px' }}>
-                                            <strong>{p.nombre}</strong>
-                                            {info.porcentaje > 100 && <span style={{ display: 'block', color: '#f44336', fontSize: '0.75rem', fontWeight: 'bold' }}>⚠️ SOBRECARGA</span>}
-                                            {info.porcentaje >= 90 && info.porcentaje <= 100 && <span style={{ display: 'block', color: '#b78103', fontSize: '0.75rem', fontWeight: 'bold' }}>⚠️ RIESGO</span>}
-                                        </td>
-                                        <td style={{ padding: '12px', fontSize: '0.9rem', color: '#555' }}>
-                                            {p.areaHa} ha • Pasto: {p.tipoPasto || 'No definido'}
-                                        </td>
-                                        <td style={{ padding: '12px' }}>
-                                            <span style={{
-                                                fontSize: '0.8rem', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', textTransform: 'uppercase',
-                                                background: p.estado === 'disponible' ? '#e8f5e9' : '#fff3e0',
-                                                color: p.estado === 'disponible' ? '#2e7d32' : '#ef6c00'
-                                            }}>
-                                                {p.estado}
-                                            </span>
-                                            {!info.canReceiveAnimals && (
-                                                <small style={{ display: 'block', color: '#f44336', marginTop: '4px' }}>🔒 Bloqueado</small>
-                                            )}
-                                        </td>
-
-                                        <td style={{ padding: '12px' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '4px' }}>
-                                                <span>{info.actual} / {info.maxima} cabezas</span>
-                                                <strong style={{ color: info.porcentaje >= 90 ? '#d32f2f' : '#333' }}>{Math.round(info.porcentaje)}%</strong>
-                                            </div>
-                                            <div style={{ width: '100%', height: '10px', background: '#eee', borderRadius: '5px', overflow: 'hidden' }}>
-                                                <div style={{ width: `${Math.min(info.porcentaje, 100)}%`, height: '100%', background: barColor, transition: 'width 0.3s' }}></div>
-                                            </div>
-                                        </td>
-
-                                        <td style={{ padding: '12px', textAlign: 'right' }}>
-                                            <button
-                                                onClick={() => handleOpenEdit(p)}
-                                                style={{ marginRight: '8px', padding: '5px 10px', background: '#fff', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer' }}
-                                            >
-                                                Editar
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(p.id)}
-                                                style={{ padding: '5px 10px', background: '#ffebee', color: '#c62828', border: '1px solid #ffcdd2', borderRadius: '4px', cursor: 'pointer' }}
-                                            >
-                                                Eliminar
-                                            </button>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
+            )}
         </div>
     );
 }
